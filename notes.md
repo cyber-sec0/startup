@@ -15,7 +15,7 @@ Launching my AMI I initially put it on a private subnet. Even though it had a pu
 
 ## Caddy
 
-No problems worked just like it said in the [instruction]([[https://github.com/webprogramming260/.github/blob/main/profile/webServers/https/https.md](https://byu.instructure.com/courses/32210/pages/caddy)](https://byu.instructure.com/courses/32210/pages/https-tls-and-certificates)).
+No problems worked just like it said in the [instruction](https://byu.instructure.com/courses/32210/pages/caddy).
 
 ## HTML
 
