@@ -83,8 +83,6 @@ I am going to use the required technologies in the following ways.
     * **Recipes**: `GET /api/recipes/dashboard`, `POST /api/recipes/`, `PUT /api/recipes/`, `DELETE /api/recipes/`.
     * **Ingredients**: `GET /api/recipes/ingredients`, `POST /api/recipes/ingredient`, `PUT /api/recipes/ingredient`.
     * **3rd Party API**: I will call an image generation API to generate representative food and or ingredient images for each recipe/ingredient created by the user.
-* **DB/Login** - I will use a MySQL database to store user credentials, recipes, and ingredients. Authentication will use JWT tokens stored in HTTP-only cookies.
-**WebSocket** - I will use WebSockets to broadcast real-time updates to the dashboard activity feed when any user recipe is modified or created.
 * **DB/Login** - I will use a MySQL or MongoDB database to store user credentials (hashed with bcrypt), recipe metadata, and ingredient lists. I will implement JWT-based authentication to secure private routes.
 * **WebSocket** - I will use WebSockets (Socket.io) to broadcast real-time updates. When a recipe is added or modified, a notification will be pushed to the UI, allowing for a collaborative or multi-device "live" experience.
 
