@@ -20,6 +20,31 @@ In a world of cluttered bookmarks and lost index cards, **Recipe Master** is the
 
 ### Design
 
+#### 🖥️ Main User Interface
+| Public Home Page | Authenticated Dashboard |
+| --- | --- |
+| ![HomePage](https://github.com/user-attachments/assets/eda6bff7-5ca9-4a44-ad06-6b13bd4f8af7) | ![User Home](https://github.com/user-attachments/assets/1f8d1421-3797-467d-9e32-2dc5d9f69c5c) |
+
+#### 📝 Recipe Management
+| Edit Recipe | View Recipe Details |
+| --- | --- |
+| ![Edit Recipe](https://github.com/user-attachments/assets/ae06d6cc-f69b-49c8-a432-90ae876b6bd8) | ![View Recipe](https://github.com/user-attachments/assets/c53da225-7243-4fbf-81ea-37acba8493ae) |
+
+| Delete Recipe Popup | Add Recipe Page |
+| --- | --- |
+| ![Delete Recipe](https://github.com/user-attachments/assets/a2b67585-b5f1-46ad-8a23-0f3a280c2a92) | ![Add Recipe](https://github.com/user-attachments/assets/faba19d3-e3e5-4e03-b50e-700db5801005) |
+
+#### 👤 User Profile & Settings
+| Profile Page | Edit Profile |
+| --- | --- |
+| ![Profile](https://github.com/user-attachments/assets/d3ac110c-8513-42cc-ba04-7e56de9ceaf4) | ![Edit Profile](https://github.com/user-attachments/assets/266ec592-f3c8-4448-8b1f-a561431ad2b7) |
+
+#### 🔐 Security & Navigation
+| Change Password | Top Navigation Menu |
+| --- | --- |
+| ![Change Password](https://github.com/user-attachments/assets/0615b77e-f7b6-45f8-92a6-ebf80732c378) | ![Navigation](https://github.com/user-attachments/assets/b59f8596-13e2-4d72-a29f-9cba02c3183e) |
+
+
 The application features a responsive dashboard where recipes are displayed in a clean grid. Users can quickly search through their collection, view detailed ingredient lists, and jump into an intuitive edit mode to refine their instructions.
 
 ```mermaid
