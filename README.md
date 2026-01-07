@@ -75,11 +75,11 @@ sequenceDiagram
 I am going to use the required technologies in the following ways.
 
 * **HTML** - I will use semantic HTML5 elements (header, footer, main, section) to provide a structural foundation for the React components and ensure accessibility.
-* **CSS** - I will implement a responsive design using Material UI components , including a theme toggle for light and dark modes.
+* **CSS** - I will implement a responsive design using Material UI components, including a theme toggle for light and dark modes.
 * **React** - The frontend will be a Single Page Application (SPA). I will use functional components, Hooks (`useState`, `useEffect`), and React Router for seamless navigation between the Dashboard and Recipe detail pages.
 * **Service** - I will build a Node.js/Express backend  with the following endpoints:
-    * **Auth**: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` .
-    * **User**: `GET /api/users/`, `PUT /api/users/email`, `PUT /api/users/username`, `DELETE /api/users/` .
+    * **Auth**: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`.
+    * **User**: `GET /api/users/`, `PUT /api/users/email`, `PUT /api/users/username`, `DELETE /api/users/`.
     * **Recipes**: `GET /api/recipes/dashboard`, `POST /api/recipes/`, `PUT /api/recipes/`, `DELETE /api/recipes/`.
     * **Ingredients**: `GET /api/recipes/ingredients`, `POST /api/recipes/ingredient`, `PUT /api/recipes/ingredient`.
     * **3rd Party API**: I will call an image generation API to generate representative food and or ingredient images for each recipe/ingredient created by the user.
