@@ -75,9 +75,16 @@ sequenceDiagram
 I am going to use the required technologies in the following ways.
 
 * **HTML** - I will use semantic HTML5 elements (header, footer, main, section) to provide a structural foundation for the React components and ensure accessibility.
-* **CSS** - I will implement a responsive design using Flexbox and Grid, including a theme toggle for light and dark modes, and CSS transitions for smooth UI interactions.
+* **CSS** - I will implement a responsive design using Material UI components , including a theme toggle for light and dark modes.
 * **React** - The frontend will be a Single Page Application (SPA). I will use functional components, Hooks (`useState`, `useEffect`), and React Router for seamless navigation between the Dashboard and Recipe detail pages.
-* **Service** - I will build a Node.js/Express backend with RESTful endpoints. It will include a call to a third-party image generation or search API to provide visual recipe and/or ingredient representations.
+* **Service** - I will build a Node.js/Express backend  with the following endpoints:
+    * **Auth**: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` .
+    * **User**: `GET /api/users/`, `PUT /api/users/email`, `PUT /api/users/username`, `DELETE /api/users/` .
+    * **Recipes**: `GET /api/recipes/dashboard`, `POST /api/recipes/`, `PUT /api/recipes/`, `DELETE /api/recipes/`.
+    * **Ingredients**: `GET /api/recipes/ingredients`, `POST /api/recipes/ingredient`, `PUT /api/recipes/ingredient`.
+    * **3rd Party API**: I will call an image generation API to generate representative food and or ingredient images for each recipe/ingredient created by the user.
+* **DB/Login** - I will use a MySQL database to store user credentials, recipes, and ingredients. Authentication will use JWT tokens stored in HTTP-only cookies.
+**WebSocket** - I will use WebSockets to broadcast real-time updates to the dashboard activity feed when any user recipe is modified or created.
 * **DB/Login** - I will use a MySQL or MongoDB database to store user credentials (hashed with bcrypt), recipe metadata, and ingredient lists. I will implement JWT-based authentication to secure private routes.
 * **WebSocket** - I will use WebSockets (Socket.io) to broadcast real-time updates. When a recipe is added or modified, a notification will be pushed to the UI, allowing for a collaborative or multi-device "live" experience.
 
