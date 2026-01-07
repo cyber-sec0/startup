@@ -13,6 +13,10 @@
 My IP address is: BLANK
 Launching my AMI I initially put it on a private subnet. Even though it had a public IP address and the security group was right, I wasn't able to connect to it.
 
+## Caddy
+
+No problems worked just like it said in the [instruction]([[https://github.com/webprogramming260/.github/blob/main/profile/webServers/https/https.md](https://byu.instructure.com/courses/32210/pages/caddy)](https://byu.instructure.com/courses/32210/pages/https-tls-and-certificates)).
+
 ## HTML
 
 This was not hard, but it was interesting to learn the proper structure and then reimplement everything using industry standards. Moving from plain HTML to a more organized architectural mindset helped clarify how content should be delivered to the user.
