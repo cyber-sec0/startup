@@ -21,6 +21,23 @@ No problems worked just like it said in the [instruction](https://byu.instructur
 
 This was not hard, but it was interesting to learn the proper structure and then reimplement everything using industry standards. Moving from plain HTML to a more organized architectural mindset helped clarify how content should be delivered to the user.
 
+For this deliverable, I successfully built the fundamental structure of my startup application. I focused on semantic HTML5 to ensure the site is accessible and well-organized.
+
+* **Structure**: I used semantic elements like `<header>`, `<main>`, `<section>`, and `<footer>` to define the layout.
+
+* **Navigation**: Implemented a functional navigation bar with placeholders for user profiles and favorites.
+
+* **Content**: Created a hero section, feature cards, and a "How It Works" guide to clearly communicate the app's purpose.
+
+* **Typography**: Integrated Google Fonts (Poppins) to ensure a professional and modern look.
+
+* **Placeholders**:
+    * **Login**: Added buttons in the header and CTA section for user authentication.
+    * **Database**: Designed the feature grid to represent data that will eventually be pulled from my recipe database.
+    * **WebSocket**: Added a "Share" feature card which will eventually utilize WebSockets for real-time recipe sharing notifications.
+
+* **Responsiveness**: Included basic CSS media queries to ensure the structure remains intact on mobile devices.
+
 ## CSS
 
 Reimplementing the styling wasn't difficult, but it was a great exercise in following modern standards for responsiveness. Starting with basic CSS and moving toward a professional look ensured the application remained clean across different screen sizes.
