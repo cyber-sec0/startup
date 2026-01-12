@@ -98,26 +98,26 @@ For this deliverable, I did the following. I checked the box `[x]` and added a d
 
 For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **HTML pages** - I did not complete this part of the deliverable.
-- [ ] **Proper HTML element usage** - I did not complete this part of the deliverable.
-- [ ] **Links** - I did not complete this part of the deliverable.
-- [ ] **Text** - I did not complete this part of the deliverable.
-- [ ] **3rd party API placeholder** - I did not complete this part of the deliverable.
-- [ ] **Images** - I did not complete this part of the deliverable.
-- [ ] **Login placeholder** - I did not complete this part of the deliverable.
-- [ ] **DB data placeholder** - I did not complete this part of the deliverable.
-- [ ] **WebSocket placeholder** - I did not complete this part of the deliverable.
+* [x] **HTML pages** - I built the index.html file with a complete structure to serve as the application entry point.
+* [x] **Proper HTML element usage** - I implemented semantic tags like header, nav, and section to follow modern accessibility standards.
+* [x] **Links** - I added navigation anchors in the header and a footer link to the project's GitHub repository.
+* [x] **Text** - I wrote original copy for the marketing sections and the step-by-step user instructions.
+* [x] **3rd party API placeholder** - I connected the project to Google Fonts and Unsplash to demonstrate external asset integration, noting that the hero background image below the title could be swapped for a random image API in the future
+* [x] **Images** - I incorporated a high-resolution background image for the hero section to improve UI appeal.
+* [x] **Login placeholder** - I added dedicated buttons for signing in and account creation in the header and CTA sections.
+* [x] **DB data placeholder** - I designed feature cards that act as visual containers for future database-driven recipe content.
+* [x] **WebSocket placeholder** - I created a sharing section to represent where real-time social notifications will be handled.
 
 ## 🚀 CSS deliverable
 
 For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Header, footer, and main content body** - I did not complete this part of the deliverable.
-- [ ] **Navigation elements** - I did not complete this part of the deliverable.
-- [ ] **Responsive to window resizing** - I did not complete this part of the deliverable.
-- [ ] **Application elements** - I did not complete this part of the deliverable.
-- [ ] **Application text content** - I did not complete this part of the deliverable.
-- [ ] **Application images** - I did not complete this part of the deliverable.
+* [x] **Header, footer, and main content body** - I applied a cohesive dark theme with a vibrant gradient header and a distinct, centered footer to frame the content.
+* [x] **Navigation elements** - I styled the nav links using flexbox and added opacity transitions to provide clear visual feedback during user interaction.
+* [x] **Responsive to window resizing** - I implemented media queries to collapse grid columns and adjust font sizes, ensuring the layout remains functional on mobile devices.
+* [x] **Application elements** - I used CSS Grid to create modular, interactive feature cards and a structured "How It Works" section with consistent spacing.
+* [x] **Application text content** - I integrated the Poppins font family with specific weights and sizes to establish a professional visual hierarchy.
+* [x] **Application images** - I styled the hero background with an overlay and cover positioning to maintain text readability and a polished look.
 
 ## 🚀 React part 1: Routing deliverable
 
