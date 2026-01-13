@@ -49,6 +49,7 @@
             color: #fff;
             font-size: 20px;
             padding: 0 10px;
+            text-decoration: none; /* Added for the anchor tag conversion */
         }
 
         /* Hero Section */
@@ -127,10 +128,13 @@
             font-weight: 600;
             padding: 15px 35px;
             border: none;
+            text-decoration: none; /* Added for anchor tags */
+            display: inline-block; /* Added for anchor tags */
         }
         .btn-custom-primary:hover {
             transform: translateY(-2px);
             background: #f0f0f0;
+            color: #333; /* Ensure color stays dark on hover */
         }
 
         .btn-custom-secondary {
@@ -139,6 +143,8 @@
             border: 2px solid #fff;
             font-weight: 600;
             padding: 15px 35px;
+            text-decoration: none; /* Added for anchor tags */
+            display: inline-block; /* Added for anchor tags */
         }
         .btn-custom-secondary:hover {
             transform: translateY(-2px);
@@ -154,6 +160,9 @@
             font-weight: 600;
             border: none;
             border-radius: 5px;
+            display: block; /* Ensures anchor behaves like block button */
+            text-decoration: none;
+            text-align: center;
         }
         .btn-cta:hover {
             background: #ee5a6f;
@@ -172,15 +181,15 @@
 </head>
 <body>
 
-    <header class="d-flex justify-content-between align-items-center">
+    <header class="d-flex justify-content-between align-items-center p-3">
         <div class="logo">Recipe Suite</div>
         <nav class="d-none d-md-flex gap-4">
-            <a href="#recipes" class="nav-link">My Recipes</a>
-            <a href="#add" class="nav-link">Add Recipe</a>
+            <a href="dashboard.html" class="nav-link">My Recipes</a>
+            <a href="add-recipe.html" class="nav-link">Add Recipe</a>
         </nav>
         <div class="user-section">
             <button class="user-btn">⭐</button>
-            <button class="user-btn">👤</button>
+            <a href="profile.html" class="user-btn">👤</a>
         </div>
     </header>
 
@@ -189,8 +198,8 @@
             <h1 class="display-4 fw-bold mb-4">Recipe Management Suite</h1>
             <p class="lead mb-4 fw-light">Store, organize, and share your favorite recipes in one beautiful place. Never lose a recipe again.</p>
             <div class="d-flex gap-3 justify-content-center flex-column flex-md-row">
-                <button class="btn-custom-primary rounded">Browse Recipes</button>
-                <button class="btn-custom-secondary rounded">Get Started</button>
+                <a href="dashboard.html" class="btn-custom-primary rounded">Browse Recipes</a>
+                <a href="dashboard.html" class="btn-custom-secondary rounded">Get Started</a>
             </div>
         </div>
     </section>
@@ -277,14 +286,14 @@
                     <h2 class="fw-bold mb-3">Ready to organize your recipe collection?</h2>
                     <p class="mb-4">Join thousands of home cooks who are already enjoying the benefits of Recipe Management Suite. Sign up today and get started for free.</p>
                     <div class="d-flex gap-3 justify-content-center justify-content-md-start">
-                        <button class="btn-custom-primary rounded">Create Free Account</button>
-                        <button class="btn-custom-secondary rounded">Sign In</button>
+                        <a href="dashboard.html" class="btn-custom-primary rounded">Create Free Account</a>
+                        <a href="dashboard.html" class="btn-custom-secondary rounded">Sign In</a>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="cta-card p-5 text-center">
                         <div class="cta-card-icon fs-1 mb-4">🍴</div>
-                        <button class="btn-cta">Get Started Free</button>
+                        <a href="dashboard.html" class="btn-cta">Get Started Free</a>
                     </div>
                 </div>
             </div>

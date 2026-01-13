@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Recipe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #1a1a1a; color: #fff; font-family: 'Poppins', sans-serif; }
+        header { background: #ff6b6b; padding: 15px 0; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 20px; border-radius: 8px; text-decoration: none; margin: 0 5px; font-size: 14px; }
+        .form-container { background: #222; padding: 30px; border-radius: 12px; max-width: 800px; margin: 0 auto; }
+        .form-control { background: #2a2a2a; border: 1px solid #444; color: white; }
+        .form-control:focus { background: #2a2a2a; color: white; border-color: #666; box-shadow: none; }
+        .group-box { border: 1px solid #444; padding: 15px; border-radius: 8px; margin-bottom: 20px; position: relative; }
+        .group-label { position: absolute; top: -12px; left: 15px; background: #222; padding: 0 5px; font-size: 0.8rem; color: #aaa; }
+        .add-btn { color: #ff6b6b; background: none; border: none; width: 100%; padding: 5px; text-align: center; }
+        .btn-save { background: #ff6b6b; color: white; border: none; padding: 10px 20px; border-radius: 5px; }
+        .btn-cancel { background: transparent; border: 1px solid #444; color: #ccc; padding: 10px 20px; border-radius: 5px; text-decoration: none; }
+        .delete-icon { color: #d32f2f; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header class="d-flex justify-content-between align-items-center px-4">
+        <div class="fw-bold fs-5">🍴 Recipe Suite</div>
+        <div>
+            <a href="dashboard.html" class="nav-btn">My Recipes</a>
+            <a href="add-recipe.html" class="nav-btn">Add Recipe</a>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+            <i class="fas fa-sun"></i>
+            <a href="profile.html" class="text-white"><i class="fas fa-user-circle fs-4"></i></a>
+        </div>
+    </header>
+
+    <div class="container mt-5 mb-5">
+        <h3 class="text-center mb-4 fw-bold">Edit Recipe</h3>
+        
+        <div class="form-container">
+            <div class="group-box">
+                <span class="group-label">Recipe Title</span>
+                <input type="text" class="form-control border-0 p-0 bg-transparent" value="chocolate">
+            </div>
+
+            <div class="text-center mb-3">
+                <label class="fw-bold mb-2">Ingredients</label>
+                <div class="row g-2 mb-2 align-items-center">
+                    <div class="col-3"><div class="group-box mb-0"><span class="group-label">Amount</span><input type="text" class="form-control border-0 p-0 bg-transparent" value="2"></div></div>
+                    <div class="col-3"><div class="group-box mb-0"><span class="group-label">Unit</span><input type="text" class="form-control border-0 p-0 bg-transparent" value="cups"></div></div>
+                    <div class="col-5"><div class="group-box mb-0"><span class="group-label">Ingredient</span><input type="text" class="form-control border-0 p-0 bg-transparent" value="milk"></div></div>
+                    <div class="col-1"><i class="fas fa-trash delete-icon"></i></div>
+                </div>
+                <button class="add-btn">+ Add Ingredient</button>
+            </div>
+
+            <div class="text-center mb-3">
+                <label class="fw-bold mb-2">Instructions</label>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="group-box mb-0 w-100"><input type="text" class="form-control border-0 p-0 bg-transparent" value="hot water"></div>
+                    <i class="fas fa-trash delete-icon"></i>
+                </div>
+                <button class="add-btn">+ Add Step</button>
+            </div>
+
+            <div class="group-box">
+                <span class="group-label">Notes</span>
+                <textarea class="form-control border-0 p-0 bg-transparent" rows="2">my favorite</textarea>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="dashboard.html" class="btn-cancel">Cancel</a>
+                <button class="btn-save">Save Recipe</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
