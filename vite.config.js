@@ -8,8 +8,6 @@ export default defineConfig({
     strictPort: true,
     // Add this section:
     allowedHosts: [
-      'r.recipemaster.click',
-      'rr.recipemaster.click', 
       'recipemaster.click'
     ],
     proxy: {
