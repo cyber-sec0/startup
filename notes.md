@@ -48,8 +48,24 @@ I spent a lot of time making the website fully functional and adding the necessa
 
 ## React Part 1: Routing
 
-Setting up React was simple. It was very interesting to take the original plain HTML structure and rebuild it into a more professional component-based system using routing.
+This deliverable was significantly more challenging than the previous ones. Transitioning from plain HTML/CSS to a fully bundled React application took nearly full days of work and resulted in way more Git commits than I initially expected.
+
+The hardest part was breaking down the original monolithic HTML files into separate, reusable components and making sure they all "talked" to each other correctly. Dealing with file imports, exports, and ensuring the directory structure matched the logic was tricky.
+
+However, it was extremely fulfilling to see it finally working—especially when the routing started clicking, and I could navigate between the Landing Page, Login, and Dashboard without the page refreshing.
+
+### Key Learnings:
+* **Vite vs CRA:** I learned how to set up a project using Vite, which is much faster than Create React App. I had to learn how to configure `vite.config.js` to handle proxies and custom entry points.
+* **Component Architecture:** Moving from copying code to reusing components (like the Header and Footer) saved a lot of time in the long run, even if setting it up was hard.
+* **Routing:** Understanding how `react-router-dom` wraps the application to simulate navigation in a Single Page Application (SPA).
 
 ## React Part 2: Reactivity
 
-Although it was hard to see everything not working in the beginning, and getting used to using components took some time, it was rewarding to see how I could modify the original CSS, HTML, and JS to work properly within the React framework. I focused on ensuring the state management aligned with industry standards for user reactivity.
+For this part, I focused on making the application interactive and ensuring all views were fully implemented. Although it was hard to see everything not working in the beginning, getting used to passing data between components took some time but was rewarding in the end, and most pages require a valid user to be logged in for security reasons.
+
+I built out specific components for the Dashboard, Recipe Cards, and Authentication forms to mock the complete app functionality. I also spent significant time ensuring the state management aligned with industry standards.
+
+### Key Learnings:
+**TODO!!! (Imcomplete!) Mocking with LocalStorage:** I learned how to use `localStorage` to mock a database connection. By saving the user's login state and theme preference to the browser's storage, the app "remembers" the user even after a page refresh, satisfying the persistence requirement.
+* **Hooks (`useState`):** I used `useState` extensively to make forms responsive, allowing the app to capture user input for recipes and login credentials in real-time.
+* **Side Effects (`useEffect`):** I learned how to use `useEffect` to handle the initial page load state and check for user authentication when the component mounts.
