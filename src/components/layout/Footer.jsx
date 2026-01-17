@@ -77,7 +77,7 @@ const Footer = () => {
             minWidth: { md: '200px' }
           }}>
             <Typography variant="subtitle2" gutterBottom>
-              Project
+              Developed by
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: { md: 'right' } }}>
               Ben G
