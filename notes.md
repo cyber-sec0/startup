@@ -55,7 +55,7 @@ The hardest part was breaking down the original monolithic HTML files into separ
 However, it was extremely fulfilling to see it finally working—especially when the routing started clicking, and I could navigate between the Landing Page, Login, and Dashboard without the page refreshing.
 
 ### Key Learnings:
-* **Vite vs CRA:** I learned how to set up a project using Vite, which is much faster than Create React App. I had to learn how to configure `vite.config.js` to handle proxies and custom entry points.
+* **React project setup with Vite:** I learned how to set up a project using Vite, which is much faster than Create React App. I had to learn how to configure `vite.config.js` to handle proxies and custom entry points.
 * **Component Architecture:** Moving from copying code to reusing components (like the Header and Footer) saved a lot of time in the long run, even if setting it up was hard.
 * **Routing:** Understanding how `react-router-dom` wraps the application to simulate navigation in a Single Page Application (SPA).
 
