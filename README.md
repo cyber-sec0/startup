@@ -123,16 +123,16 @@ For this deliverable, I did the following. I checked the box `[x]` and added a d
 
 For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Bundled using Vite** - I did not complete this part of the deliverable.
-- [ ] **Components** - I did not complete this part of the deliverable.
-- [ ] **Router** - I did not complete this part of the deliverable.
+* [x] **Bundled using Vite** - I migrated the project to use Vite for bundling, which required restructuring the root directory and updating dependency configurations for a faster development environment.
+* [x] **Components** - I converted all previous HTML pages into modular React components (e.g., `LandingPage`, `RecipeCard`, `NavigationBar`), separating layout, styles, and logic, and most pages require a valid user to be logged in for security reasons.
+* [x] **Router** - I implemented `react-router-dom` to manage navigation between the Landing, Login, Dashboard, and Recipe pages without triggering full page reloads.
 
 ## 🚀 React part 2: Reactivity deliverable
 
 For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **All functionality implemented or mocked out** - I did not complete this part of the deliverable.
-- [ ] **Hooks** - I did not complete this part of the deliverable.
+* [x] **TODO!!! (Imcomplete!) All functionality implemented or mocked out** - The application now supports user interactions; the login forms capture input, the dashboard renders lists of recipes dynamically, and the navigation adapts based on the user's state.
+* [x] **Hooks** - I utilized `useState` to manage local component state (like form inputs and recipe data) and `useEffect` to handle side effects such as checking authentication status on page load.
 
 ## 🚀 Service deliverable
 
