@@ -17,17 +17,22 @@ function RecipePage() {
   useEffect(() => {
     const fetchRecipeData = async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes/${id}`, {
-          credentials: 'include'  // Add this line
-        });
-        if (!response.ok) throw new Error('Recipe not found');
+        // MOCK: Fetch from localStorage
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        const data = await response.json();
+        const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+        const data = recipes.find(r => r.recipeId === parseInt(id));
+
+        if (!data) throw new Error('Recipe not found');
+        
         setRecipe({
           id: parseInt(id),
           title: data.title,
           ingredients: data.ingredients,
-          instructions: data.instructions.split('\r\n'),
+          // Handle instructions possibly being an array or string
+          instructions: Array.isArray(data.instructions) 
+            ? data.instructions 
+            : data.instructions.split('\n'),
           notes: data.notes
         });
       } catch (error) {
@@ -51,16 +56,11 @@ function RecipePage() {
 
   const confirmDelete = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes`, { // Notice change here from /:id to /api/recipes
-        credentials: 'include',
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ recipeId: id }) // Send the recipeId in the body
-      });
+      // MOCK: Delete from localStorage
+      const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+      const updatedRecipes = recipes.filter(r => r.recipeId !== parseInt(id));
+      localStorage.setItem('recipes', JSON.stringify(updatedRecipes));
       
-      if (!response.ok) throw new Error('Delete failed');
       navigate('/dash'); // Redirect to the homepage/dashboard after successful deletion
     } catch (error) {
       console.error('Delete error:', error);
