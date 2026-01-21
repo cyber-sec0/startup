@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Container, 
-  Typography, 
   Box, 
   CircularProgress, 
-  Grid,
-  Paper,
-  Divider,
-  Button
+  Alert,
+  Snackbar
 } from '@mui/material';
-import UserInfoCard from '../components/profile/UserInfoCard';
-import UserStatsCard from '../components/profile/UserStatsCard';
-import ProfileEditForm from '../components/profile/ProfileEditForm';
-import PasswordChangeForm from '../components/profile/PasswordChangeForm';
 import ProfileContainer from '../components/profile/ProfileContainer';
-import Alert from '@mui/material/Alert';
-import Snackbar from '@mui/material/Snackbar';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 function ProfilePage() {
-  const { user, verifyAuth } = useAuth();
+  const { verifyAuth } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('view');
@@ -30,7 +21,6 @@ function ProfilePage() {
     severity: 'info' 
   });
 
-  // Fetch user data
   // Initialize userData with proper structure
   const [userData, setUserData] = useState({
     userName: '',
@@ -45,27 +35,25 @@ function ProfilePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users`, {
-          credentials: 'include'
-        });
+        // MOCK: Fetch from localStorage
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-        if (response.status === 401) {
+        if (!currentUser) {
           navigate('/signin');
           return;
         }
 
-        if (!response.ok) throw new Error('Failed to load profile data');
-
-        const data = await response.json();
         setUserData(prev => ({
           ...prev, // Keep existing defaults
-          userName: data.userName || prev.userName,
-          email: data.email || prev.email,
-          bio: data.bio || '',
-          createdAt: data.createdAt || new Date().toISOString(),
-          recipeCount: data.recipeCount || 0,
-          favoriteCount: data.favoriteCount || 0,
-          sharedCount: data.sharedCount || 0
+          userName: currentUser.userName || prev.userName,
+          email: currentUser.email || prev.email,
+          bio: currentUser.bio || '',
+          createdAt: currentUser.createdAt || new Date().toISOString(),
+          recipeCount: 0, // ProfileContainer calculates this now for mock
+          favoriteCount: 0,
+          sharedCount: 0
         }));
       } catch (error) {
         setNotification({
@@ -82,66 +70,18 @@ function ProfilePage() {
   }, [navigate]);
 
   const handleProfileUpdate = async (updatedData) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
-      }
-
-      // Refresh user data
-      const updatedUser = await response.json();
-      setUserData(updatedUser);
-      await verifyAuth(); // Update auth context
-      
-      setNotification({
-        open: true,
-        message: 'Profile updated successfully!',
-        severity: 'success'
-      });
-      setActiveTab('view');
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: error.message,
-        severity: 'error'
-      });
-    }
+    // This is passed to the Edit form which handles the actual update in the mock version
+    // But we need to update local state here to reflect changes
+    setUserData(prev => ({
+        ...prev,
+        ...updatedData
+    }));
+    setActiveTab('view');
   };
 
   const handlePasswordUpdate = async (passwordData) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/change-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(passwordData),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to change password');
-      }
-
-      setNotification({
-        open: true,
-        message: 'Password changed successfully!',
-        severity: 'success'
-      });
-      setActiveTab('view');
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: error.message,
-        severity: 'error'
-      });
-    }
+    // Password form handles the mock logic
+    setActiveTab('view');
   };
 
   const handleNotificationClose = () => {
@@ -164,8 +104,9 @@ function ProfilePage() {
         activeTab={activeTab}
         handleEditToggle={() => setActiveTab('edit')}
         handlePasswordToggle={() => setActiveTab('password')}
-        onSave={handleProfileUpdate} // Changed prop name to onSave
-        onPasswordChange={handlePasswordUpdate}
+        handleProfileUpdate={handleProfileUpdate} // Passed to form
+        handlePasswordUpdate={handlePasswordUpdate}
+        onSave={handleProfileUpdate} // For compatibility
       />
       
       <Snackbar
