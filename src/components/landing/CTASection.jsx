@@ -79,7 +79,8 @@ const CtaSection = () => {
                 px: 4, 
                 borderRadius: 4,
                 bgcolor: 'rgba(255,255,255,0.95)',
-                color: 'text.primary'
+                // FIX: Force text color to black/dark grey even in Dark Mode
+                color: '#1a1a1a' 
               }}
             >
               <Box 
@@ -123,7 +124,8 @@ const CtaSection = () => {
                 >
                   Get Started Free
                 </Button>
-                <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+                {/* FIX: Force caption color to dark grey */}
+                <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#666' }}>
                   No credit card required
                 </Typography>
               </Box>
