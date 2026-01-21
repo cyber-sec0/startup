@@ -66,6 +66,7 @@ For this part, I focused on making the application interactive and ensuring all 
 I built out specific components for the Dashboard, Recipe Cards, and Authentication forms to mock the complete app functionality. I also spent significant time ensuring the state management aligned with industry standards.
 
 ### Key Learnings:
-**TODO!!! (Imcomplete!) Mocking with LocalStorage:** I learned how to use `localStorage` to mock a database connection. By saving the user's login state and theme preference to the browser's storage, the app "remembers" the user even after a page refresh, satisfying the persistence requirement.
+* **Mocking Backend Functionality:** I specifically modified **11 different pages and components** (including `AuthContext`, `DashboardPage`, `RecipePage`, and various forms) to add mock API `fetch` calls using `localStorage` logic. This ensures data persistence for users, recipes, and ingredients across sessions without a real backend.
+* **Mocking WebSockets:** I implemented `setInterval` within the `DashboardPage` to simulate a live WebSocket connection, generating random notification events to demonstrate real-time reactivity.
 * **Hooks (`useState`):** I used `useState` extensively to make forms responsive, allowing the app to capture user input for recipes and login credentials in real-time.
 * **Side Effects (`useEffect`):** I learned how to use `useEffect` to handle the initial page load state and check for user authentication when the component mounts.

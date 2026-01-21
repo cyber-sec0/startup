@@ -22,62 +22,62 @@ function AddRecipePage() {
       setLoading(true);
       setError(null);
 
-      // First create new ingredients that don't have IDs
-      const ingredientsWithIds = await Promise.all(
-        formData.ingredients.map(async (ingredient) => {
-          if (ingredient.id) {
-            // Existing ingredient
-            return {
-              ingredientId: ingredient.id,
-              quantity: parseFloat(ingredient.quantity) || 0
-            };
-          }
+      // MOCK: Save to localStorage
+      await new Promise(resolve => setTimeout(resolve, 800)); // Sim delay
 
-          // Create new ingredient
-          const ingredientResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes/ingredient`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              name: ingredient.name,
-              measurement: ingredient.unit
-            })
-          });
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (!currentUser) throw new Error('You must be logged in');
 
-          if (!ingredientResponse.ok) {
-            const errorData = await ingredientResponse.json();
-            throw new Error(errorData.error || 'Failed to create ingredient');
-          }
+      // 1. Handle Ingredients (add new ones to 'ingredients' store)
+      const storedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
+      const recipeIngredients = [];
 
-          const newIngredient = await ingredientResponse.json();
-          return {
-            ingredientId: newIngredient.ingredientId,
-            quantity: parseFloat(ingredient.quantity) || 0
-          };
-        })
-      );
+      formData.ingredients.forEach(formIng => {
+        // If it has an ID, use it. If not, check if it exists in store by name.
+        // If not, create new.
+        let ingId = formIng.id;
+        
+        if (!ingId) {
+             const existing = storedIngredients.find(si => si.name.toLowerCase() === formIng.name.toLowerCase());
+             if (existing) {
+                 ingId = existing.ingredientId;
+             } else {
+                 ingId = Date.now() + Math.floor(Math.random() * 1000);
+                 storedIngredients.push({
+                     ingredientId: ingId,
+                     name: formIng.name,
+                     measurement: formIng.unit
+                 });
+             }
+        }
+        
+        recipeIngredients.push({
+            ingredientId: ingId,
+            name: formIng.name,
+            quantity: formIng.quantity,
+            measurement: formIng.unit
+        });
+      });
+      
+      localStorage.setItem('ingredients', JSON.stringify(storedIngredients));
 
-      // Create the recipe
-      const recipeResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
+      // 2. Create Recipe
+      const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+      const newRecipe = {
+          recipeId: Date.now(),
           title: formData.title,
           instructions: formData.instructions.join('\n'),
           notes: formData.notes,
-          ingredients: ingredientsWithIds
-        })
-      });
+          ingredients: recipeIngredients,
+          author: currentUser.email,
+          createdAt: new Date().toISOString()
+      };
 
-      if (!recipeResponse.ok) {
-        const errorData = await recipeResponse.json();
-        throw new Error(errorData.error || 'Failed to create recipe');
-      }
+      recipes.push(newRecipe);
+      localStorage.setItem('recipes', JSON.stringify(recipes));
 
-      const recipeData = await recipeResponse.json();
       setSuccess(true);
-      setTimeout(() => navigate(`/dash`), 200);
+      setTimeout(() => navigate(`/dash`), 500);
     } catch (error) {
       console.error('Error creating recipe:', error);
       setError(error.message);
