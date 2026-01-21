@@ -31,24 +31,55 @@ function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  // =========================================================================
+  // WEBSOCKET MOCK: Simulate real-time notifications
+  // =========================================================================
+  useEffect(() => {
+    // Only subscribe to "socket" updates if authenticated
+    if (!isAuthenticated) return;
+
+    // Use setInterval to mock receiving WebSocket messages
+    const socketInterval = setInterval(() => {
+      // 30% chance to receive a message every 8 seconds to make it feel "live" but not annoying
+      if (Math.random() < 0.3) {
+        const mockUsers = ['ChefMario', 'GordonR', 'JuliaC', 'HomeCook123'];
+        const mockActions = [
+          'just added a new "Lasagna" recipe!',
+          'just added a new "brigadeiro" recipe!',
+          'just added a new "Chocolate Cake" recipe!',
+          'just added a new "Brazilian brigadeiro" recipe!'
+        ];
+        
+        const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+        const randomAction = mockActions[Math.floor(Math.random() * mockActions.length)];
+        
+        setNotification({
+          open: true,
+          message: `🔔 ${randomUser} ${randomAction}`,
+          severity: 'info'
+        });
+      }
+    }, 8000);
+
+    return () => clearInterval(socketInterval);
+  }, [isAuthenticated]);
+  // =========================================================================
+
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes/dashboard`, {
-          method: 'GET',
-          credentials: 'include'
-        });
+        // MOCK: Fetch from localStorage
+        await new Promise(resolve => setTimeout(resolve, 600)); 
 
-        if (response.status === 401) {
-          navigate('/signin');
-          return;
-        }
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser) return; // Should be handled by auth check above
+        
+        const allRecipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+        // Filter for user
+        const userRecipes = allRecipes.filter(r => r.author === currentUser.email || !r.author);
 
-        if (!response.ok) throw new Error('Failed to fetch recipes');
-
-        const data = await response.json();
-        const formattedRecipes = data.map(recipe => ({
+        const formattedRecipes = userRecipes.map(recipe => ({
           id: recipe.recipeId,
           title: recipe.title,
           notes: recipe.notes,
@@ -56,7 +87,7 @@ function DashboardPage() {
         }));
 
         setRecipes(formattedRecipes);
-        setFilteredRecipes(formattedRecipes); // Set filtered recipes initially to all
+        setFilteredRecipes(formattedRecipes);
       } catch (error) {
         console.error('Error:', error);
         setNotification({
@@ -121,25 +152,10 @@ function DashboardPage() {
     if (!recipeToDelete) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          recipeId: recipeToDelete.id,
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          navigate('/signin');
-          return;
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Delete failed');
-      }
+      // MOCK: Delete from localStorage
+      const allRecipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+      const updatedStore = allRecipes.filter(r => r.recipeId !== recipeToDelete.id);
+      localStorage.setItem('recipes', JSON.stringify(updatedStore));
 
       // Remove the deleted recipe from the state
       const updatedRecipes = recipes.filter(recipe => recipe.id !== recipeToDelete.id);
