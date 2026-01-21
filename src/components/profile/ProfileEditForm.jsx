@@ -74,25 +74,32 @@ function ProfileEditForm({ userData = {}, onCancel, onSave }) {
     if (!validateForm()) return;
   
     try {
-      const res1 = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/username`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        credentials: 'include',
-        body: JSON.stringify({userName: formData.userName})
-      });
-  
-      if (!res1.ok) throw new Error('Username update failed');
-  
-      const res2 = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/email`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        credentials: 'include',
-        body: JSON.stringify({email: formData.email})
-      });
-  
-      if (!res2.ok) throw new Error('Email update failed');
+      // MOCK: Update LocalStorage instead of API
+      await new Promise(resolve => setTimeout(resolve, 500)); // Sim delay
+
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+
+      if (!currentUser) throw new Error('No active session');
+
+      // Update in users array
+      const userIndex = users.findIndex(u => u.email === currentUser.email);
+      if (userIndex !== -1) {
+        users[userIndex].userName = formData.userName;
+        users[userIndex].email = formData.email;
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+
+      // Update current session
+      currentUser.userName = formData.userName;
+      currentUser.email = formData.email;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
   
       setNotification({open: true, message: 'Profile updated successfully', severity: 'success'});
+      
+      // Notify parent to refresh data
+      if(onSave) onSave(currentUser);
+
       navigate('/profile');
   
     } catch (err) {
