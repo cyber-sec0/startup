@@ -17,10 +17,16 @@ function ProfileContainer({
   const [recipeCount, setRecipeCount] = useState(0)
 
   useEffect(()=>{
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes/dashboard`,{credentials:"include"})
-    .then(r=>r.json())
-    .then(data=>setRecipeCount(data.length))
-    .catch(e=>console.error("Failed to fetch recipes",e))
+    // MOCK: Fetch recipes from localStorage instead of API
+    const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    
+    if (currentUser) {
+      // Filter recipes for current user if you are storing an ownerId, 
+      // otherwise just count all for this mock
+      const userRecipes = recipes.filter(r => r.author === currentUser.email || !r.author); 
+      setRecipeCount(userRecipes.length);
+    }
   },[])
 
   const safeUserData = {
