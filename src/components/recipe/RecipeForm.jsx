@@ -26,19 +26,23 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
   const [errors, setErrors] = useState({});
   
   useEffect(() => {
+    // MOCK: Fetch ingredients from localStorage
     const fetchAvailableIngredients = async () => {
       try {
-        const ingredientsResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/recipes/ingredients`, {
-          credentials: 'include'
-        });
+        const storedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
         
-        if (!ingredientsResponse.ok) {
-          throw new Error('Failed to fetch ingredients');
-        }
-        
-        const ingredientsData = await ingredientsResponse.json();
+        // Mock some defaults if none exist
+        const defaultIngredients = [
+          { ingredientId: 1, name: 'Flour', measurement: 'cup' },
+          { ingredientId: 2, name: 'Sugar', measurement: 'cup' },
+          { ingredientId: 3, name: 'Eggs', measurement: 'count' },
+          { ingredientId: 4, name: 'Milk', measurement: 'cup' }
+        ];
+
+        const allIngredients = [...defaultIngredients, ...storedIngredients];
+
         // Deduplicate ingredients case-insensitively
-        const uniqueIngredients = ingredientsData.reduce((acc, current) => {
+        const uniqueIngredients = allIngredients.reduce((acc, current) => {
           const exists = acc.some(ing => ing.name.toLowerCase() === current.name.toLowerCase());
           return exists ? acc : [...acc, current];
         }, []);
@@ -78,6 +82,8 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
   const handleRemoveIngredient = (ingredientId) => {
     if (formData.ingredients.length === 1) return;
     
+    // If mocking, we might rely on index rather than ID for new items
+    // but here we filter.
     const newIngredients = formData.ingredients.filter(ingredient => ingredient.id !== ingredientId);
     setFormData({
       ...formData,
@@ -154,7 +160,8 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
       ),
     };
     onSubmit(cleanedData);
-    window.location.href = '/dash/';
+    // Let the parent handle navigation or logic, but for this mock we can redirect here if needed
+    // window.location.href = '/dash/'; 
   };
 
   return (
@@ -186,7 +193,16 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
                   onChange={(updatedIngredient) => 
                     handleIngredientChange(index, updatedIngredient)
                   }
-                  onRemove={() => handleRemoveIngredient(ingredient.id)}
+                  onRemove={() => {
+                     // Handle remove by index if ID missing
+                     if (!ingredient.id) {
+                        const newIngredients = [...formData.ingredients];
+                        newIngredients.splice(index, 1);
+                        setFormData({...formData, ingredients: newIngredients});
+                     } else {
+                        handleRemoveIngredient(ingredient.id)
+                     }
+                  }}
                   availableIngredients={availableIngredients}
                 />
               ))}
