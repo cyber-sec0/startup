@@ -77,22 +77,32 @@ function PasswordChangeForm({ onCancel }) {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          password: formData.newPassword,
-          currentPassword: formData.currentPassword
-        })
-      });
+      // MOCK: Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Password update failed');
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+
+      if (!currentUser) throw new Error('Not authenticated');
+
+      // Verify current password (simple check for mock)
+      // In a real app, this would be hashed. Here we check plain text for the mock.
+      if (currentUser.password !== formData.currentPassword) {
+        throw new Error('Incorrect current password');
       }
+
+      // Update password
+      currentUser.password = formData.newPassword;
+      
+      // Update in users array
+      const userIndex = users.findIndex(u => u.email === currentUser.email);
+      if (userIndex !== -1) {
+        users[userIndex].password = formData.newPassword;
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+      
+      // Update current session
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
       setNotification({
         open: true,
