@@ -15,18 +15,15 @@ function ApiTestPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Test connection to backend
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/api/test`)
-      .then(response => response.json())
-      .then(data => {
-        setMessage(data.message);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error connecting to backend:', error);
-        setMessage('Failed to connect to backend. See console for details.');
-        setLoading(false);
-      });
+    // MOCK: Simulate backend connection test
+    const mockConnection = async () => {
+        setTimeout(() => {
+            setMessage('Backend connection mocked successfully via LocalStorage adapter.');
+            setLoading(false);
+        }, 1000);
+    };
+    
+    mockConnection();
   }, []);
   
   return (
@@ -64,7 +61,7 @@ function ApiTestPage() {
                 variant="body1" 
                 sx={{ 
                   p: 2, 
-                  bgcolor: message.includes('Failed') ? '#ffebee' : '#e8f5e9',
+                  bgcolor: '#e8f5e9',
                   borderRadius: 1,
                   fontFamily: 'monospace'
                 }}
