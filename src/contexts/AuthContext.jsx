@@ -20,21 +20,18 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
-  // Function to check if user is authenticated by making a request to the backend
+  // MOCK: Check if user is in localStorage
   const checkAuthStatus = async () => {
     setLoading(true);
     try {
-      // Call endpoint that requires authentication
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users`, {
-        credentials: 'include' // Important to include cookies
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+      // Simulate network check
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
       } else {
-        // If request fails, user is not authenticated
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -47,18 +44,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login function that calls your backend
+  // MOCK: Login function using localStorage users
   const login = async (credentials) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-        credentials: 'include' // Important to include cookies
-      });
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
+      
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const foundUser = users.find(u => u.email === credentials.email && u.password === credentials.password);
 
-      if (response.ok) {
-        // Successful login - fetch user data
+      if (foundUser) {
+        // Save to "session"
+        localStorage.setItem('currentUser', JSON.stringify(foundUser));
         await checkAuthStatus();
         return true;
       }
@@ -69,48 +65,56 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register function
+  // MOCK: Register function using localStorage
   const register = async (userData) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-        credentials: 'include'
-      });
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
 
-      if (response.ok) {
-        // Registration typically logs in the user as well
-        await checkAuthStatus();
-        return true;
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      // Check for existing
+      if (users.some(u => u.email === userData.email)) {
+        throw new Error('User already exists');
       }
-      return false;
+
+      const newUser = {
+        ...userData,
+        id: Date.now(), // simple mock ID
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(newUser);
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      // Auto login
+      localStorage.setItem('currentUser', JSON.stringify(newUser));
+      await checkAuthStatus();
+      return true;
     } catch (error) {
       console.error('Registration failed:', error);
       return false;
     }
   };
 
-  // Logout function
+  // MOCK: Logout
   const logout = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      // Whether successful or not, clear the state
+      await new Promise(resolve => setTimeout(resolve, 300));
+      localStorage.removeItem('currentUser');
       setUser(null);
       setIsAuthenticated(false);
-
-      return response.ok;
+      return true;
     } catch (error) {
       console.error('Logout failed:', error);
-      // Still clear state even if request fails
       setUser(null);
       setIsAuthenticated(false);
       return false;
     }
+  };
+
+  // MOCK: Verify auth (alias for checkAuthStatus for compatibility)
+  const verifyAuth = async () => {
+    await checkAuthStatus();
   };
 
   return (
@@ -121,7 +125,8 @@ export const AuthProvider = ({ children }) => {
       login, 
       logout,
       register,
-      checkAuthStatus
+      checkAuthStatus,
+      verifyAuth
     }}>
       {children}
     </AuthContext.Provider>
