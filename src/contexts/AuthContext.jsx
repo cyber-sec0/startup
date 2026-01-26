@@ -1,17 +1,15 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
-// FIX: Added 'export' here so ProtectedRoutes can import it
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Check if we are already logged in (optional check endpoint)
   useEffect(() => {
     const checkLogin = async () => {
-      // Logic to check if cookie exists/is valid could go here
-      // For simplicity in this step, we start null or rely on page load
+      // Optional: Check if token exists in cookies by calling an endpoint
+      // const res = await fetch('/api/user/me');
     };
     checkLogin();
   }, []);
@@ -27,13 +25,14 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setUser({ email, id: data.id }); // Update React state
+        setUser({ email, id: data.id });
         return { success: true };
       } else {
-        return { success: false, message: 'Login failed' };
+        const err = await response.json();
+        return { success: false, message: err.msg || 'Login failed' };
       }
     } catch (error) {
-        return { success: false, message: 'Network error' };
+      return { success: false, message: 'Network error' };
     } finally {
       setLoading(false);
     }
@@ -42,23 +41,25 @@ export const AuthProvider = ({ children }) => {
   const register = async (userName, email, password) => {
     setLoading(true);
     try {
+      // FIX: Ensure all 3 fields are sent in the body
       const response = await fetch('/api/auth/create', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ userName, email, password }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setUser({ email, id: data.id });
+        setUser({ email, id: data.id, userName });
         return { success: true };
       } else {
-        return { success: false, message: 'Registration failed' };
+        const err = await response.json();
+        return { success: false, message: err.msg || 'Registration failed' };
       }
     } catch (error) {
-        return { success: false, message: 'Network error' };
+      return { success: false, message: 'Network error' };
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
