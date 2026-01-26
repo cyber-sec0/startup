@@ -42,9 +42,12 @@ function SignInPage() {
       setEmailError(true);
       setEmailErrorMessage('Email is required');
       return false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } 
+    // Basic format check
+    // Note: Removed strict regex to allow simple usernames if your backend supports them
+    if (email.length < 3) {
       setEmailError(true);
-      setEmailErrorMessage('Please enter a valid email address');
+      setEmailErrorMessage('Please enter a valid email or username');
       return false;
     }
     
@@ -79,32 +82,31 @@ function SignInPage() {
     }
     
     try {
-      // Show loading status
       setIsSubmitting(true);
       setStatusMessage({ type: 'info', message: 'Logging in...' });
       
-      // Call login function from AuthContext
-      const success = await login({ 
-        email, 
-        password,
-        rememberMe
-      });
+      // FIX 1: Pass arguments as separate variables (email, password)
+      // The backend/context expects (email, password), not an object
+      const result = await login(email, password);
       
-      if (success) {
-        // Redirect to dashboard on successful login
-        navigate('/dash');
+      // FIX 2: Check result.success
+      if (result.success) {
+        // Clear errors
+        setStatusMessage({ type: 'success', message: 'Success! Redirecting...' });
+        // Redirect to dashboard
+        navigate('/dashboard');
       } else {
-        // Show error message
+        // Show error message from backend or default
         setStatusMessage({ 
           type: 'error', 
-          message: 'Invalid email or password. Please try again.' 
+          message: result.message || 'Invalid email or password. Please try again.' 
         });
       }
     } catch (error) {
       console.error('Login error:', error);
       setStatusMessage({ 
         type: 'error', 
-        message: 'Login failed. Please try again later.' 
+        message: 'Network error. Please check your connection and try again.' 
       });
     } finally {
       setIsSubmitting(false);

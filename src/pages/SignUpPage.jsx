@@ -1,7 +1,7 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Box, FormControlLabel, Checkbox, Alert, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext';
 import AuthLayout from '../components/auth/AuthLayout';
 import AuthHeader from '../components/auth/AuthHeader';
 import UsernameField from '../components/auth/UsernameField';
@@ -14,6 +14,8 @@ import PasswordPolicy from '../components/auth/PasswordPolicy';
 
 function SignUpPage() {
   const navigate = useNavigate();
+  const { register } = useAuth(); // Get register function from context
+
   const [formData, setFormData] = useState({
     userName: '',
     email: '',
@@ -51,6 +53,7 @@ function SignUpPage() {
       [name]: name === 'agreeToTerms' ? checked : value
     });
     
+    // Clear errors when user types
     if (errors[name]) {
       setErrors({ ...errors, [name]: false });
       setErrorMessages({ ...errorMessages, [name]: '' });
@@ -74,29 +77,23 @@ function SignUpPage() {
       isValid = false;
     }
     
-// Validate email
-const validateEmail = (email) => {
-  // Basic email check with improved regex
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!email || !emailRegex.test(email)) {
-    return 'Please enter a valid email address';
-  }
-  
-  // Check for multiple consecutive dots
-  if (email.includes('..')) {
-    return 'Email address cannot contain consecutive dots';
-  }
+    // Validate email
+    const validateEmail = (email) => {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!email || !emailRegex.test(email)) {
+        return 'Please enter a valid email address';
+      }
+      if (email.includes('..')) {
+        return 'Email address cannot contain consecutive dots';
+      }
+      return '';
+    };
 
-  return '';
-};
-
-// Inside your validateForm function, replace email validation with:
-if (!formData.email || validateEmail(formData.email)) {
-  newErrors.email = true;
-  newErrorMessages.email = validateEmail(formData.email) || 'Please enter a valid email address';
-  isValid = false;
-}
-
+    if (!formData.email || validateEmail(formData.email)) {
+      newErrors.email = true;
+      newErrorMessages.email = validateEmail(formData.email) || 'Please enter a valid email address';
+      isValid = false;
+    }
     
     // Validate password
     if (!formData.password) {
@@ -135,8 +132,6 @@ if (!formData.email || validateEmail(formData.email)) {
     return isValid;
   };
 
-  const { register } = useAuth();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -144,32 +139,34 @@ if (!formData.email || validateEmail(formData.email)) {
     setFormStatus({ submitting: true, success: false, error: null });
 
     try {
-      const success = await register({
-        userName: formData.userName,
-        email: formData.email,
-        password: formData.password
-      });
+      // FIX 1: Pass arguments as separate variables, NOT as a single object
+      const result = await register(
+        formData.userName,
+        formData.email,
+        formData.password
+      );
 
-      if (success) {
+      // FIX 2: Check result.success (since register returns an object {success: true/false})
+      if (result.success) {
         setFormStatus({
           submitting: false,
           success: true,
           error: null
         });
 
-        // Redirect after 2 seconds
-        navigate('/dash')
-        // setTimeout(() => navigate('/dash'), 2000);
+        // Redirect to dashboard immediately on success
+        navigate('/dashboard');
       } else {
-        throw new Error('Registration failed');
+        throw new Error(result.message || 'Registration failed');
       }
     } catch (error) {
-      let errorMessage = 'Registration failed';
+      let errorMessage = error.message || 'Registration failed';
       
-      if (error.message.includes('missing required information')) {
+      // Improve error readability
+      if (errorMessage.includes('missing required information')) {
         errorMessage = 'Please fill in all required fields';
-      } else if (error.message.includes('could not create user')) {
-        errorMessage = 'Account with this email already exists';
+      } else if (errorMessage.includes('Existing user')) {
+        errorMessage = 'An account with this email already exists';
       }
 
       setFormStatus({
@@ -185,13 +182,13 @@ if (!formData.email || validateEmail(formData.email)) {
       <AuthHeader title="Create Account" />
       
       {formStatus.success && (
-        <Alert severity="success" sx={{ width: '100%' }}>
-          Account created successfully! Redirecting to login...
+        <Alert severity="success" sx={{ width: '100%', mb: 2 }}>
+          Account created successfully! Redirecting...
         </Alert>
       )}
       
       {formStatus.error && (
-        <Alert severity="error" sx={{ width: '100%' }}>
+        <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
           {formStatus.error}
         </Alert>
       )}
@@ -207,7 +204,6 @@ if (!formData.email || validateEmail(formData.email)) {
           gap: 2,
         }}
       >
-        {/* Keep all existing form fields */}
         <UsernameField
           value={formData.userName}
           onChange={handleChange}
