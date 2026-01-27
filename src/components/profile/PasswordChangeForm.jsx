@@ -33,7 +33,7 @@ function PasswordChangeForm({ onCancel }) {
       [name]: value
     }));
     
-    // Clear error when field is edited
+    //Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -77,32 +77,20 @@ function PasswordChangeForm({ onCancel }) {
     setIsLoading(true);
     
     try {
-      // MOCK: Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch('/api/profile/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword
+        })
+      });
 
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      const users = JSON.parse(localStorage.getItem('users')) || [];
-
-      if (!currentUser) throw new Error('Not authenticated');
-
-      // Verify current password (simple check for mock)
-      // In a real app, this would be hashed. Here we check plain text for the mock.
-      if (currentUser.password !== formData.currentPassword) {
-        throw new Error('Incorrect current password');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Failed to update password');
       }
-
-      // Update password
-      currentUser.password = formData.newPassword;
-      
-      // Update in users array
-      const userIndex = users.findIndex(u => u.email === currentUser.email);
-      if (userIndex !== -1) {
-        users[userIndex].password = formData.newPassword;
-        localStorage.setItem('users', JSON.stringify(users));
-      }
-      
-      // Update current session
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
       setNotification({
         open: true,
@@ -110,16 +98,15 @@ function PasswordChangeForm({ onCancel }) {
         severity: 'success'
       });
       
-      // Reset form
+      //Reset form
       setFormData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
       
-      // Optionally call onSave if provided
       if (onCancel) {
-        setTimeout(onCancel, 2000); // Close after success message
+        setTimeout(onCancel, 2000);
       }
     } catch (error) {
       console.error('Password change error:', error);
