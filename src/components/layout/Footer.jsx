@@ -80,7 +80,7 @@ const Footer = () => {
               Developed by
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: { md: 'right' } }}>
-              Ben G
+              Ben
             </Typography>
             <Link 
               href="https://github.com/cyber-sec0/startup/" 

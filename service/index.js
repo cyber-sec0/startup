@@ -1,123 +1,22 @@
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const app = express();
 
-// The service port. In production the frontend code is statically hosted by the service on the same port.
 const port = process.argv.length > 2 ? process.argv[2] : 4000;
 
-// JSON body parsing using built-in middleware
 app.use(express.json());
-
-// Use the cookie parser middleware for tracking authentication tokens
 app.use(cookieParser());
-
-// Serve up the frontend static content hosting
 app.use(express.static('public'));
-
-// Trust headers that are forwarded from the proxy so we can determine IP addresses
 app.set('trust proxy', true);
 
-// Router for service endpoints
-var apiRouter = express.Router();
-app.use('/api', apiRouter);
-
-// --- In-Memory Data Store (Replaces LocalStorage for now) ---
-let users = []; 
+//In-memory data stores
+let users = [];
 let recipes = [];
+let ingredients = [];
 
-// --- Auth Endpoints ---
-
-// CreateAuth token for a new user
-apiRouter.post('/auth/create', async (req, res) => {
-  if (await findUser(req.body.email)) {
-    res.status(409).send({ msg: 'Existing user' });
-  } else {
-    const user = await createUser(req.body.email, req.body.password);
-
-    // Set the cookie
-    setAuthCookie(res, user.token);
-
-    res.send({
-      id: user._id,
-    });
-  }
-});
-
-// GetAuth token for the provided credentials
-apiRouter.post('/auth/login', async (req, res) => {
-  const user = await findUser(req.body.email);
-  if (user) {
-    if (await bcrypt.compare(req.body.password, user.password)) {
-      setAuthCookie(res, user.token);
-      res.send({ id: user._id });
-      return;
-    }
-  }
-  res.status(401).send({ msg: 'Unauthorized' });
-});
-
-// DeleteAuth token if stored in cookie
-apiRouter.delete('/auth/logout', (_req, res) => {
-  res.clearCookie('token');
-  res.status(204).end();
-});
-
-// GetUser returns information about a user
-apiRouter.get('/user/:email', async (req, res) => {
-  const user = await findUser(req.params.email);
-  if (user) {
-    const token = req.cookies['token'];
-    res.send({ email: user.email, authenticated: token === user.token });
-    return;
-  }
-  res.status(404).send({ msg: 'Unknown' });
-});
-
-// secureApiRouter verifies credentials for endpoints
-var secureApiRouter = express.Router();
-apiRouter.use(secureApiRouter);
-
-secureApiRouter.use(async (req, res, next) => {
-  authToken = req.cookies['token'];
-  const user = await findUserByToken(authToken);
-  if (user) {
-    next();
-  } else {
-    res.status(401).send({ msg: 'Unauthorized' });
-  }
-});
-
-// --- Application Endpoints (Protected) ---
-
-// Get Recipes
-secureApiRouter.get('/recipes', (req, res) => {
-  res.send(recipes);
-});
-
-// Save Recipe
-secureApiRouter.post('/recipe', (req, res) => {
-  const recipe = { ...req.body, id: Date.now() };
-  recipes.push(recipe);
-  res.send(recipe);
-});
-
-// Default error handler
-app.use(function (err, req, res, next) {
-  res.status(500).send({ type:(err.name), message:err.message });
-});
-
-// Return the application's default page if the path is unknown
-app.use((_req, res) => {
-  res.sendFile('index.html', { root: 'public' });
-});
-
-app.listen(port, () => {
-  console.log(`Listening on port ${port}`);
-});
-
-// --- Helper Functions ---
-
+//Helper functions
 function setAuthCookie(res, token) {
   res.cookie('token', token, {
     secure: true,
@@ -126,13 +25,15 @@ function setAuthCookie(res, token) {
   });
 }
 
-async function createUser(email, password) {
-  // Hash the password before we insert it into the database
+async function createUser(email, password, userName) {
   const passwordHash = await bcrypt.hash(password, 10);
   const user = {
+    id: uuidv4(),
     email: email,
+    userName: userName,
     password: passwordHash,
-    token: require('uuid').v4(),
+    token: uuidv4(),
+    createdAt: new Date().toISOString()
   };
   users.push(user);
   return user;
@@ -145,3 +46,269 @@ async function findUser(email) {
 async function findUserByToken(token) {
   return users.find((u) => u.token === token);
 }
+
+//Router for service endpoints
+const apiRouter = express.Router();
+app.use('/api', apiRouter);
+
+//Auth Endpoints
+apiRouter.post('/auth/create', async (req, res) => {
+  const { email, password, userName } = req.body;
+  
+  if (!email || !password || !userName) {
+    return res.status(400).send({ msg: 'Missing required information' });
+  }
+
+  if (await findUser(email)) {
+    return res.status(409).send({ msg: 'Existing user' });
+  }
+
+  const user = await createUser(email, password, userName);
+  setAuthCookie(res, user.token);
+  
+  res.send({
+    id: user.id,
+    email: user.email,
+    userName: user.userName
+  });
+});
+
+apiRouter.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await findUser(email);
+  
+  if (user && await bcrypt.compare(password, user.password)) {
+    setAuthCookie(res, user.token);
+    res.send({ 
+      id: user.id,
+      email: user.email,
+      userName: user.userName
+    });
+    return;
+  }
+  res.status(401).send({ msg: 'Unauthorized' });
+});
+
+apiRouter.delete('/auth/logout', (_req, res) => {
+  res.clearCookie('token');
+  res.status(204).end();
+});
+
+apiRouter.get('/user/:email', async (req, res) => {
+  const user = await findUser(req.params.email);
+  if (user) {
+    const token = req.cookies['token'];
+    res.send({ 
+      email: user.email,
+      userName: user.userName,
+      authenticated: token === user.token 
+    });
+    return;
+  }
+  res.status(404).send({ msg: 'Unknown' });
+});
+
+//Secure API Router (requires authentication)
+const secureApiRouter = express.Router();
+apiRouter.use(secureApiRouter);
+
+secureApiRouter.use(async (req, res, next) => {
+  const authToken = req.cookies['token'];
+  const user = await findUserByToken(authToken);
+  if (user) {
+    req.user = user; //Attach user to request
+    next();
+  } else {
+    res.status(401).send({ msg: 'Unauthorized' });
+  }
+});
+
+//User Profile Endpoints
+secureApiRouter.get('/profile', async (req, res) => {
+  const user = req.user;
+  const userRecipes = recipes.filter(r => r.author === user.email);
+  
+  res.send({
+    userName: user.userName,
+    email: user.email,
+    createdAt: user.createdAt,
+    recipeCount: userRecipes.length
+  });
+});
+
+secureApiRouter.put('/profile', async (req, res) => {
+  const { userName, email } = req.body;
+  const user = req.user;
+  
+  //Check if new email already exists (only if email is being changed)
+  if (email && email !== user.email && await findUser(email)) {
+    return res.status(409).send({ msg: 'Email already in use' });
+  }
+  
+  //Update username if provided
+  if (userName) {
+    user.userName = userName;
+  }
+  
+  //Update email if provided
+  if (email) {
+    user.email = email;
+  }
+  
+  res.send({
+    userName: user.userName,
+    email: user.email
+  });
+});
+
+secureApiRouter.put('/profile/password', async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = req.user;
+  
+  if (!await bcrypt.compare(currentPassword, user.password)) {
+    return res.status(401).send({ msg: 'Incorrect current password' });
+  }
+  
+  user.password = await bcrypt.hash(newPassword, 10);
+  res.send({ msg: 'Password updated successfully' });
+});
+
+//Recipe Endpoints
+secureApiRouter.get('/recipes', (req, res) => {
+  const userRecipes = recipes.filter(r => r.author === req.user.email);
+  res.send(userRecipes);
+});
+
+secureApiRouter.get('/recipes/:id', (req, res) => {
+  const recipe = recipes.find(r => r.recipeId === parseInt(req.params.id) && r.author === req.user.email);
+  if (recipe) {
+    res.send(recipe);
+  } else {
+    res.status(404).send({ msg: 'Recipe not found' });
+  }
+});
+
+secureApiRouter.post('/recipes', (req, res) => {
+  const { title, instructions, notes, ingredients } = req.body;
+  
+  //Process ingredients (add new ones to ingredients store)
+  const recipeIngredients = [];
+  
+  ingredients.forEach(ing => {
+    let ingId = ing.ingredientId;
+    
+    if (!ingId) {
+      const existing = ingredients.find(si => si.name.toLowerCase() === ing.name.toLowerCase());
+      if (existing) {
+        ingId = existing.ingredientId;
+      } else {
+        ingId = Date.now() + Math.floor(Math.random() * 1000);
+        ingredients.push({
+          ingredientId: ingId,
+          name: ing.name,
+          measurement: ing.unit
+        });
+      }
+    }
+    
+    recipeIngredients.push({
+      ingredientId: ingId,
+      name: ing.name,
+      quantity: ing.quantity,
+      measurement: ing.unit
+    });
+  });
+  
+  const recipe = {
+    recipeId: Date.now(),
+    title,
+    instructions,
+    notes,
+    ingredients: recipeIngredients,
+    author: req.user.email,
+    createdAt: new Date().toISOString()
+  };
+  
+  recipes.push(recipe);
+  res.send(recipe);
+});
+
+secureApiRouter.put('/recipes/:id', (req, res) => {
+  const recipeId = parseInt(req.params.id);
+  const recipeIndex = recipes.findIndex(r => r.recipeId === recipeId && r.author === req.user.email);
+  
+  if (recipeIndex === -1) {
+    return res.status(404).send({ msg: 'Recipe not found' });
+  }
+  
+  const { title, instructions, notes, ingredients: newIngredients } = req.body;
+  
+  //Process ingredients
+  const recipeIngredients = [];
+  
+  newIngredients.forEach(ing => {
+    let ingId = ing.ingredientId || ing.id;
+    
+    if (!ingId) {
+      const existing = ingredients.find(si => si.name.toLowerCase() === ing.name.toLowerCase());
+      if (existing) {
+        ingId = existing.ingredientId;
+      } else {
+        ingId = Date.now() + Math.floor(Math.random() * 1000);
+        ingredients.push({
+          ingredientId: ingId,
+          name: ing.name,
+          measurement: ing.unit
+        });
+      }
+    }
+    
+    recipeIngredients.push({
+      ingredientId: ingId,
+      name: ing.name,
+      quantity: ing.quantity,
+      measurement: ing.unit
+    });
+  });
+  
+  recipes[recipeIndex] = {
+    ...recipes[recipeIndex],
+    title,
+    instructions,
+    notes,
+    ingredients: recipeIngredients
+  };
+  
+  res.send(recipes[recipeIndex]);
+});
+
+secureApiRouter.delete('/recipes/:id', (req, res) => {
+  const recipeId = parseInt(req.params.id);
+  const recipeIndex = recipes.findIndex(r => r.recipeId === recipeId && r.author === req.user.email);
+  
+  if (recipeIndex === -1) {
+    return res.status(404).send({ msg: 'Recipe not found' });
+  }
+  
+  recipes.splice(recipeIndex, 1);
+  res.status(204).end();
+});
+
+//Ingredients Endpoints
+secureApiRouter.get('/ingredients', (req, res) => {
+  res.send(ingredients);
+});
+
+//Default error handler
+app.use((err, req, res, next) => {
+  res.status(500).send({ type: err.name, message: err.message });
+});
+
+//Return the application's default page if the path is unknown
+app.use((_req, res) => {
+  res.sendFile('index.html', { root: 'public' });
+});
+
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
+});
