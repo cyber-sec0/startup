@@ -22,59 +22,29 @@ function AddRecipePage() {
       setLoading(true);
       setError(null);
 
-      // MOCK: Save to localStorage
-      await new Promise(resolve => setTimeout(resolve, 800)); // Sim delay
+      //Prepare ingredients in the format expected by the backend
+      const ingredients = formData.ingredients.map(ing => ({
+        name: ing.name,
+        quantity: ing.quantity,
+        unit: ing.unit,
+        ingredientId: ing.id || null
+      }));
 
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (!currentUser) throw new Error('You must be logged in');
-
-      // 1. Handle Ingredients (add new ones to 'ingredients' store)
-      const storedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
-      const recipeIngredients = [];
-
-      formData.ingredients.forEach(formIng => {
-        // If it has an ID, use it. If not, check if it exists in store by name.
-        // If not, create new.
-        let ingId = formIng.id;
-        
-        if (!ingId) {
-             const existing = storedIngredients.find(si => si.name.toLowerCase() === formIng.name.toLowerCase());
-             if (existing) {
-                 ingId = existing.ingredientId;
-             } else {
-                 ingId = Date.now() + Math.floor(Math.random() * 1000);
-                 storedIngredients.push({
-                     ingredientId: ingId,
-                     name: formIng.name,
-                     measurement: formIng.unit
-                 });
-             }
-        }
-        
-        recipeIngredients.push({
-            ingredientId: ingId,
-            name: formIng.name,
-            quantity: formIng.quantity,
-            measurement: formIng.unit
-        });
-      });
-      
-      localStorage.setItem('ingredients', JSON.stringify(storedIngredients));
-
-      // 2. Create Recipe
-      const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-      const newRecipe = {
-          recipeId: Date.now(),
+      const response = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
           title: formData.title,
           instructions: formData.instructions.join('\n'),
           notes: formData.notes,
-          ingredients: recipeIngredients,
-          author: currentUser.email,
-          createdAt: new Date().toISOString()
-      };
+          ingredients: ingredients
+        })
+      });
 
-      recipes.push(newRecipe);
-      localStorage.setItem('recipes', JSON.stringify(recipes));
+      if (!response.ok) {
+        throw new Error('Failed to create recipe');
+      }
 
       setSuccess(true);
       setTimeout(() => navigate(`/dash`), 500);
