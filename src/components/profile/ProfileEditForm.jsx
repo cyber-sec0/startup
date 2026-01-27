@@ -14,7 +14,6 @@ import { useNavigate } from 'react-router-dom';
 function ProfileEditForm({ userData = {}, onCancel, onSave }) {
   const navigate = useNavigate();
 
-  // Initialize state with proper field names and fallbacks
   const [formData, setFormData] = useState({
     userName: userData.userName || '',
     email: userData.email || ''
@@ -27,7 +26,6 @@ function ProfileEditForm({ userData = {}, onCancel, onSave }) {
     severity: 'info'
   });
 
-  // Update form data when userData changes
   useEffect(() => {
     setFormData({
       userName: userData.userName || '',
@@ -74,31 +72,23 @@ function ProfileEditForm({ userData = {}, onCancel, onSave }) {
     if (!validateForm()) return;
   
     try {
-      // MOCK: Update LocalStorage instead of API
-      await new Promise(resolve => setTimeout(resolve, 500)); // Sim delay
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
 
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      const users = JSON.parse(localStorage.getItem('users')) || [];
-
-      if (!currentUser) throw new Error('No active session');
-
-      // Update in users array
-      const userIndex = users.findIndex(u => u.email === currentUser.email);
-      if (userIndex !== -1) {
-        users[userIndex].userName = formData.userName;
-        users[userIndex].email = formData.email;
-        localStorage.setItem('users', JSON.stringify(users));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Failed to update profile');
       }
 
-      // Update current session
-      currentUser.userName = formData.userName;
-      currentUser.email = formData.email;
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      const updatedUser = await response.json();
   
       setNotification({open: true, message: 'Profile updated successfully', severity: 'success'});
       
-      // Notify parent to refresh data
-      if(onSave) onSave(currentUser);
+      if(onSave) onSave(updatedUser);
 
       navigate('/profile');
   
@@ -158,8 +148,7 @@ function ProfileEditForm({ userData = {}, onCancel, onSave }) {
               <Button 
                 variant="contained" 
                 type="submit"
-                onClick={() => setTimeout(() => window.location.reload(), 1500)} //Go back and show changes
-
+                onClick={() => setTimeout(() => window.location.reload(), 1500)}
               >
                 Save Changes
               </Button>
