@@ -15,15 +15,26 @@ function ApiTestPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // MOCK: Simulate backend connection test
-    const mockConnection = async () => {
-        setTimeout(() => {
-            setMessage('Backend connection mocked successfully via LocalStorage adapter.');
-            setLoading(false);
-        }, 1000);
+    const testConnection = async () => {
+      try {
+        //Test if backend is responding
+        const response = await fetch('/api/ingredients', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          setMessage('✓ Backend connection successful! API is running on port 4000.');
+        } else {
+          setMessage('⚠ Backend responded but authentication may be required.');
+        }
+      } catch (error) {
+        setMessage(`✗ Backend connection failed: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
     };
     
-    mockConnection();
+    testConnection();
   }, []);
   
   return (
@@ -61,7 +72,7 @@ function ApiTestPage() {
                 variant="body1" 
                 sx={{ 
                   p: 2, 
-                  bgcolor: '#e8f5e9',
+                  bgcolor: message.includes('✓') ? '#e8f5e9' : '#ffebee',
                   borderRadius: 1,
                   fontFamily: 'monospace'
                 }}
