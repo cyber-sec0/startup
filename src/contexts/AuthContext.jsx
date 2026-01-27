@@ -15,25 +15,42 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check authentication status on mount
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  // MOCK: Check if user is in localStorage
+  //Check authentication status
   const checkAuthStatus = async () => {
     setLoading(true);
     try {
-      // Simulate network check
-      await new Promise(resolve => setTimeout(resolve, 500));
+      //Check if we have a stored email to verify
+      const storedEmail = sessionStorage.getItem('userEmail');
       
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
+      if (!storedEmail) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`/api/user/${storedEmail}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated) {
+          setUser(data);
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+          sessionStorage.removeItem('userEmail');
+        }
       } else {
         setUser(null);
         setIsAuthenticated(false);
+        sessionStorage.removeItem('userEmail');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -44,17 +61,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // MOCK: Login function using localStorage users
+  //Login function
   const login = async (credentials) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
-      
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const foundUser = users.find(u => u.email === credentials.email && u.password === credentials.password);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(credentials)
+      });
 
-      if (foundUser) {
-        // Save to "session"
-        localStorage.setItem('currentUser', JSON.stringify(foundUser));
+      if (response.ok) {
+        const userData = await response.json();
+        sessionStorage.setItem('userEmail', userData.email);
         await checkAuthStatus();
         return true;
       }
@@ -65,42 +84,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // MOCK: Register function using localStorage
+  //Register function
   const register = async (userData) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
+      const response = await fetch('/api/auth/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(userData)
+      });
 
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      
-      // Check for existing
-      if (users.some(u => u.email === userData.email)) {
-        throw new Error('User already exists');
+      if (response.ok) {
+        const data = await response.json();
+        sessionStorage.setItem('userEmail', data.email);
+        await checkAuthStatus();
+        return true;
       }
-
-      const newUser = {
-        ...userData,
-        id: Date.now(), // simple mock ID
-        createdAt: new Date().toISOString()
-      };
-
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
       
-      // Auto login
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-      await checkAuthStatus();
-      return true;
+      const errorData = await response.json();
+      throw new Error(errorData.msg || 'Registration failed');
     } catch (error) {
       console.error('Registration failed:', error);
-      return false;
+      throw error;
     }
   };
 
-  // MOCK: Logout
+  //Logout
   const logout = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      localStorage.removeItem('currentUser');
+      await fetch('/api/auth/logout', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      sessionStorage.removeItem('userEmail');
       setUser(null);
       setIsAuthenticated(false);
       return true;
@@ -112,7 +129,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // MOCK: Verify auth (alias for checkAuthStatus for compatibility)
+  //Verify auth (alias for checkAuthStatus)
   const verifyAuth = async () => {
     await checkAuthStatus();
   };
