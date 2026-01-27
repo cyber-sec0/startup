@@ -70,3 +70,14 @@ I built out specific components for the Dashboard, Recipe Cards, and Authenticat
 * **Mocking WebSockets:** I implemented `setInterval` within the `DashboardPage` to simulate a live WebSocket connection, generating random notification events to demonstrate real-time reactivity.
 * **Hooks (`useState`):** I used `useState` extensively to make forms responsive, allowing the app to capture user input for recipes and login credentials in real-time.
 * **Side Effects (`useEffect`):** I learned how to use `useEffect` to handle the initial page load state and check for user authentication when the component mounts.
+
+## Service
+
+This deliverable required migrating from localStorage to a real backend service. Creating the Express server in the `service/` directory and implementing proper authentication with BCrypt and HTTP-only cookies was challenging but essential for understanding client-server architecture. I learned the importance of proper project structure (separate package.json files for frontend/backend) and middleware order in Express. The most difficult part was updating all 11+ frontend files to use fetch with `credentials: 'include'` instead of localStorage, and debugging authentication issues using browser DevTools. Integrating the third-party quote API (`api.quotable.kurokeita.dev`) taught me about external service calls and graceful error handling.
+
+### Key Learnings:
+* **Backend Setup:** Created Express server on port 4000 with separate `service/package.json` for backend dependencies. The deployment script expects frontend in root and backend in `service/` folder.
+* **Authentication:** Implemented BCrypt password hashing (salt rounds = 10) and HTTP-only cookies for secure token storage. Understanding that cookies are sent automatically with `credentials: 'include'` was crucial.
+* **API Design:** Built RESTful endpoints following proper conventions (GET, POST, PUT, DELETE) with authentication middleware protecting user-specific routes. Each protected route verifies the cookie token before allowing access.
+* **Proxy Configuration:** Configured Vite proxy in `vite.config.js` to route `/api` requests to port 4000 during development. In production, Express serves both frontend static files and API endpoints on the same port.
+* **Third-Party Integration:** Integrated quotable API for random quotes on dashboard. Learned to handle different JSON response structures and implement loading states for better UX.
