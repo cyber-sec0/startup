@@ -21,7 +21,6 @@ function ProfilePage() {
     severity: 'info' 
   });
 
-  // Initialize userData with proper structure
   const [userData, setUserData] = useState({
     userName: '',
     email: '',
@@ -35,23 +34,23 @@ function ProfilePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // MOCK: Fetch from localStorage
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('/api/profile', {
+          credentials: 'include'
+        });
 
-        if (!currentUser) {
+        if (!response.ok) {
           navigate('/signin');
           return;
         }
 
+        const data = await response.json();
+
         setUserData(prev => ({
-          ...prev, // Keep existing defaults
-          userName: currentUser.userName || prev.userName,
-          email: currentUser.email || prev.email,
-          bio: currentUser.bio || '',
-          createdAt: currentUser.createdAt || new Date().toISOString(),
-          recipeCount: 0, // ProfileContainer calculates this now for mock
+          ...prev,
+          userName: data.userName || prev.userName,
+          email: data.email || prev.email,
+          createdAt: data.createdAt || new Date().toISOString(),
+          recipeCount: data.recipeCount || 0,
           favoriteCount: 0,
           sharedCount: 0
         }));
@@ -70,8 +69,6 @@ function ProfilePage() {
   }, [navigate]);
 
   const handleProfileUpdate = async (updatedData) => {
-    // This is passed to the Edit form which handles the actual update in the mock version
-    // But we need to update local state here to reflect changes
     setUserData(prev => ({
         ...prev,
         ...updatedData
@@ -80,7 +77,6 @@ function ProfilePage() {
   };
 
   const handlePasswordUpdate = async (passwordData) => {
-    // Password form handles the mock logic
     setActiveTab('view');
   };
 
@@ -104,9 +100,9 @@ function ProfilePage() {
         activeTab={activeTab}
         handleEditToggle={() => setActiveTab('edit')}
         handlePasswordToggle={() => setActiveTab('password')}
-        handleProfileUpdate={handleProfileUpdate} // Passed to form
+        handleProfileUpdate={handleProfileUpdate}
         handlePasswordUpdate={handlePasswordUpdate}
-        onSave={handleProfileUpdate} // For compatibility
+        onSave={handleProfileUpdate}
       />
       
       <Snackbar

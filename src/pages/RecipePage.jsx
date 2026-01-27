@@ -1,4 +1,4 @@
-// src/pages/RecipePage.jsx
+//src/pages/RecipePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, CircularProgress, Alert } from '@mui/material';
@@ -17,19 +17,21 @@ function RecipePage() {
   useEffect(() => {
     const fetchRecipeData = async () => {
       try {
-        // MOCK: Fetch from localStorage
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-        const data = recipes.find(r => r.recipeId === parseInt(id));
+        const response = await fetch(`/api/recipes/${id}`, {
+          credentials: 'include'
+        });
 
-        if (!data) throw new Error('Recipe not found');
+        if (!response.ok) {
+          throw new Error('Recipe not found');
+        }
+        
+        const data = await response.json();
         
         setRecipe({
           id: parseInt(id),
           title: data.title,
           ingredients: data.ingredients,
-          // Handle instructions possibly being an array or string
+          //Handle instructions possibly being an array or string
           instructions: Array.isArray(data.instructions) 
             ? data.instructions 
             : data.instructions.split('\n'),
@@ -56,19 +58,22 @@ function RecipePage() {
 
   const confirmDelete = async () => {
     try {
-      // MOCK: Delete from localStorage
-      const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-      const updatedRecipes = recipes.filter(r => r.recipeId !== parseInt(id));
-      localStorage.setItem('recipes', JSON.stringify(updatedRecipes));
+      const response = await fetch(`/api/recipes/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete recipe');
+      }
       
-      navigate('/dash'); // Redirect to the homepage/dashboard after successful deletion
+      navigate('/dash');
     } catch (error) {
       console.error('Delete error:', error);
       setError('Failed to delete recipe');
     }
     setDeleteDialogOpen(false);
   };
-  
 
   const goBack = () => {
     navigate('/dash');

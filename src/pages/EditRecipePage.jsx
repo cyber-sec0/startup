@@ -14,15 +14,17 @@ function EditRecipePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // MOCK: Fetch from localStorage
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-        const recipeData = recipes.find(r => r.recipeId === parseInt(id));
+        const response = await fetch(`/api/recipes/${id}`, {
+          credentials: 'include'
+        });
 
-        if (!recipeData) throw new Error('Recipe not found');
+        if (!response.ok) {
+          throw new Error('Recipe not found');
+        }
 
-        // Transform ingredients to expected format
+        const recipeData = await response.json();
+
+        //Transform ingredients to expected format
         const formattedIngredients = (recipeData.ingredients || []).map(ing => ({
           id: ing.ingredientId,
           name: ing.name,
@@ -54,54 +56,29 @@ function EditRecipePage() {
     setSaveStatus({ saving: true, error: null });
 
     try {
-      // MOCK: Update localStorage
-      await new Promise(resolve => setTimeout(resolve, 800));
+      //Prepare ingredients
+      const ingredients = formData.ingredients.map(ing => ({
+        ingredientId: ing.id || null,
+        name: ing.name,
+        quantity: ing.quantity,
+        unit: ing.unit
+      }));
 
-      const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-      const recipeIndex = recipes.findIndex(r => r.recipeId === parseInt(id));
-      
-      if (recipeIndex === -1) throw new Error('Recipe not found');
-
-      // 1. Process ingredients (simplified for mock: update store if new names)
-      const storedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
-      const recipeIngredients = [];
-
-      formData.ingredients.forEach(formIng => {
-        let ingId = formIng.id;
-        // Check if ingredient exists, if not create
-        if (!ingId) {
-             const existing = storedIngredients.find(si => si.name.toLowerCase() === formIng.name.toLowerCase());
-             if (existing) {
-                 ingId = existing.ingredientId;
-             } else {
-                 ingId = Date.now() + Math.floor(Math.random() * 1000);
-                 storedIngredients.push({
-                     ingredientId: ingId,
-                     name: formIng.name,
-                     measurement: formIng.unit
-                 });
-             }
-        }
-        
-        recipeIngredients.push({
-            ingredientId: ingId,
-            name: formIng.name,
-            quantity: formIng.quantity,
-            measurement: formIng.unit
-        });
-      });
-      localStorage.setItem('ingredients', JSON.stringify(storedIngredients));
-
-      // 2. Update Recipe object
-      recipes[recipeIndex] = {
-          ...recipes[recipeIndex],
+      const response = await fetch(`/api/recipes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
           title: formData.title,
           instructions: formData.instructions.join('\n'),
           notes: formData.notes,
-          ingredients: recipeIngredients
-      };
-      
-      localStorage.setItem('recipes', JSON.stringify(recipes));
+          ingredients: ingredients
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update recipe');
+      }
 
       navigate(`/recipe/${id}`);
     } catch (error) {
