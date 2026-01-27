@@ -14,21 +14,6 @@ function ProfileContainer({
   handleProfileUpdate,
   handlePasswordUpdate 
 }) {
-  const [recipeCount, setRecipeCount] = useState(0)
-
-  useEffect(()=>{
-    // MOCK: Fetch recipes from localStorage instead of API
-    const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    
-    if (currentUser) {
-      // Filter recipes for current user if you are storing an ownerId, 
-      // otherwise just count all for this mock
-      const userRecipes = recipes.filter(r => r.author === currentUser.email || !r.author); 
-      setRecipeCount(userRecipes.length);
-    }
-  },[])
-
   const safeUserData = {
     userName: '',
     email: '',
@@ -61,7 +46,7 @@ function ProfileContainer({
             <Box sx={{ mt: 3 }}>
               <UserStatsCard 
                 stats={{
-                  recipeCount: recipeCount, //use fetched count
+                  recipeCount: safeUserData.recipeCount,
                   favoriteCount: userData.favoriteCount,
                   sharedCount: userData.sharedCount
                 }}
@@ -75,7 +60,7 @@ function ProfileContainer({
                 <>
                   <Typography variant="h6">Recent Activity</Typography>
                   <Typography variant="body1" sx={{ mt: 2 }}>
-                    You've created {recipeCount} recipes.
+                    You've created {safeUserData.recipeCount} recipes.
                   </Typography>
                 </>
               ) : activeTab === 'edit' ? (
