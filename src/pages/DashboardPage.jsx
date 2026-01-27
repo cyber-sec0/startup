@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Typography, Box, Snackbar, Alert, Paper, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import RecipeGrid from '../components/dashboard/RecipeGrid';
@@ -17,15 +17,14 @@ function DashboardPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState(null);
-  const [notification, setNotification] = useState({ 
-    open: false, 
-    message: '', 
-    severity: 'success' 
-  });
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [quote, setQuote] = useState({ text: '', author: '' });
   const [quoteLoading, setQuoteLoading] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  const hasFetchedRecipes = useRef(false); //Prevent double fetch
+  const hasFetchedQuote = useRef(false); //Prevent double fetch
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -33,19 +32,18 @@ function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  //Fetch random quote from quotable API
-  //Alternative: https://api.breakingbadquotes.xyz/v1/quotes
+  //Fetch quote - only once
   useEffect(() => {
+    if (!isAuthenticated || hasFetchedQuote.current) return;
+    
     const fetchQuote = async () => {
+      hasFetchedQuote.current = true; //Mark as fetched before async call
       setQuoteLoading(true);
       try {
         const response = await fetch('https://api.quotable.kurokeita.dev/api/quotes/random');
         if (response.ok) {
           const data = await response.json();
-          setQuote({ 
-            text: data.quote.content, 
-            author: data.quote.author.name 
-          });
+          setQuote({ text: data.quote.content, author: data.quote.author.name });
         }
       } catch (error) {
         console.error('Failed to fetch quote:', error);
@@ -54,9 +52,7 @@ function DashboardPage() {
       }
     };
 
-    if (isAuthenticated) {
-      fetchQuote();
-    }
+    fetchQuote();
   }, [isAuthenticated]);
 
   //WebSocket simulation
@@ -66,222 +62,100 @@ function DashboardPage() {
     const socketInterval = setInterval(() => {
       if (Math.random() < 0.3) {
         const mockUsers = ['ChefMario', 'GordonR', 'JuliaC', 'HomeCook123'];
-        const mockActions = [
-          'just added a new "Lasagna" recipe!',
-          'just added a new "brigadeiro" recipe!',
-          'just added a new "Chocolate Cake" recipe!',
-          'just added a new "Brazilian brigadeiro" recipe!'
-        ];
-        
+        const mockActions = ['just added a new "Lasagna" recipe!', 'just added a new "brigadeiro" recipe!', 'just added a new "Chocolate Cake" recipe!', 'just added a new "Brazilian brigadeiro" recipe!'];
         const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
         const randomAction = mockActions[Math.floor(Math.random() * mockActions.length)];
-        
-        setNotification({
-          open: true,
-          message: `🔔 ${randomUser} ${randomAction}`,
-          severity: 'info'
-        });
+        setNotification({ open: true, message: `🔔 ${randomUser} ${randomAction}`, severity: 'info' });
       }
     }, 8000);
 
     return () => clearInterval(socketInterval);
   }, [isAuthenticated]);
 
+  //Fetch recipes - only once
   useEffect(() => {
+    if (!isAuthenticated || hasFetchedRecipes.current) return;
+
     const fetchRecipes = async () => {
+      hasFetchedRecipes.current = true; //Mark as fetched before async call
       try {
         setLoading(true);
-        
-        const response = await fetch('/api/recipes', {
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch recipes');
-        }
-
+        const response = await fetch('/api/recipes', { credentials: 'include' });
+        if (!response.ok) throw new Error('Failed to fetch recipes');
         const data = await response.json();
-        
-        const formattedRecipes = data.map(recipe => ({
-          id: recipe.recipeId,
-          title: recipe.title,
-          notes: recipe.notes,
-          createdAt: recipe.createdAt
-        }));
-
+        const formattedRecipes = data.map(recipe => ({ id: recipe.recipeId, title: recipe.title, notes: recipe.notes, createdAt: recipe.createdAt }));
         setRecipes(formattedRecipes);
         setFilteredRecipes(formattedRecipes);
       } catch (error) {
         console.error('Error:', error);
-        setNotification({
-          open: true,
-          message: error.message || 'Failed to load recipes',
-          severity: 'error'
-        });
+        setNotification({ open: true, message: error.message || 'Failed to load recipes', severity: 'error' });
       } finally {
         setLoading(false);
       }
     };
 
-    if (isAuthenticated) {
-      fetchRecipes();
-    }
-  }, [isAuthenticated, isLoading, navigate]);
+    fetchRecipes();
+  }, [isAuthenticated]);
 
-  //Filter recipes based on the search term
+  //Filter recipes
   useEffect(() => {
-    const filtered = recipes.filter(recipe =>
-      recipe.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = recipes.filter(recipe => recipe.title.toLowerCase().includes(searchTerm.toLowerCase()));
     setFilteredRecipes(filtered);
+    setCurrentPage(1); //Reset to first page when search changes
   }, [searchTerm, recipes]);
 
-  //Update paginated recipes
+  //Paginate recipes
   useEffect(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     setPaginatedRecipes(filteredRecipes.slice(startIndex, endIndex));
   }, [filteredRecipes, currentPage, itemsPerPage]);
 
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-  };
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
-  const handleItemsPerPageChange = (value) => {
-    setItemsPerPage(value);
-    setCurrentPage(1);
-  };
-
-  const handleViewRecipe = (recipeId) => {
-    navigate(`/recipe/${recipeId}`);
-  };
-
-  const handleEdit = (recipeId) => {
-    navigate(`/edit-recipe/${recipeId}`);
-  };
-
-  const handleDelete = (id) => {
-    const recipe = recipes.find(r => r.id === id);
-    setRecipeToDelete(recipe);
-    setDeleteDialogOpen(true);
-  };
+  const handleSearchChange = (value) => setSearchTerm(value);
+  const handlePageChange = (page) => setCurrentPage(page);
+  const handleItemsPerPageChange = (value) => { setItemsPerPage(value); setCurrentPage(1); };
+  const handleViewRecipe = (recipeId) => navigate(`/recipe/${recipeId}`);
+  const handleEdit = (recipeId) => navigate(`/edit-recipe/${recipeId}`);
+  const handleDelete = (id) => { const recipe = recipes.find(r => r.id === id); setRecipeToDelete(recipe); setDeleteDialogOpen(true); };
 
   const confirmDelete = async () => {
     if (!recipeToDelete) return;
-
     try {
-      const response = await fetch(`/api/recipes/${recipeToDelete.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete recipe');
-      }
-
+      const response = await fetch(`/api/recipes/${recipeToDelete.id}`, { method: 'DELETE', credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to delete recipe');
       const updatedRecipes = recipes.filter(recipe => recipe.id !== recipeToDelete.id);
       setRecipes(updatedRecipes);
-
-      setNotification({
-        open: true,
-        message: `Recipe "${recipeToDelete.title}" deleted successfully`,
-        severity: 'success',
-      });
+      setNotification({ open: true, message: `Recipe "${recipeToDelete.title}" deleted successfully`, severity: 'success' });
     } catch (error) {
-      setNotification({
-        open: true,
-        message: error.message || 'Failed to delete recipe',
-        severity: 'error',
-      });
+      setNotification({ open: true, message: error.message || 'Failed to delete recipe', severity: 'error' });
     }
-
     setDeleteDialogOpen(false);
     setRecipeToDelete(null);
   };
 
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
-  };
+  const handleCloseNotification = () => setNotification({ ...notification, open: false });
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        My Recipes
-      </Typography>
-      
-      {/* Quote Section - appears right after title */}
-      <Paper 
-        elevation={2} 
-        sx={{ 
-          p: 3, 
-          mb: 3, 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
-        }}
-      >
+      <Typography variant="h4" component="h1" gutterBottom>My Recipes</Typography>
+      <Paper elevation={2} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
         {quoteLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress sx={{ color: 'white' }} size={24} />
-          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress sx={{ color: 'white' }} size={24} /></Box>
         ) : quote.text ? (
           <>
-            <Typography variant="h6" sx={{ fontStyle: 'italic', mb: 1 }}>
-              "{quote.text}"
-            </Typography>
-            <Typography variant="body2" sx={{ textAlign: 'right', opacity: 0.9 }}>
-              — {quote.author}
-            </Typography>
+            <Typography variant="h6" sx={{ fontStyle: 'italic', mb: 1 }}>"{quote.text}"</Typography>
+            <Typography variant="body2" sx={{ textAlign: 'right', opacity: 0.9 }}>— {quote.author}</Typography>
           </>
         ) : (
-          <Typography variant="body2" sx={{ textAlign: 'center', opacity: 0.8 }}>
-            Loading inspirational quote...
-          </Typography>
+          <Typography variant="body2" sx={{ textAlign: 'center', opacity: 0.8 }}>Loading inspirational quote...</Typography>
         )}
       </Paper>
-      
-      <SearchBar 
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-      />
-      
-      <Box sx={{ mt: 3 }}>
-        <RecipeGrid 
-          recipes={paginatedRecipes} 
-          loading={loading}
-          onView={handleViewRecipe}
-          onEdit={handleEdit}
-          onDelete={handleDelete} 
-        />
-      </Box>
-      
-      <PaginationControls
-        totalItems={filteredRecipes.length}
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        onPageChange={handlePageChange}
-        onItemsPerPageChange={handleItemsPerPageChange}
-      />
-      
-      <DeleteConfirmationDialog
-        open={deleteDialogOpen}
-        title={recipeToDelete?.title || ''}
-        onClose={() => setDeleteDialogOpen(false)}
-        onConfirm={confirmDelete}
-      />
-      
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseNotification} severity={notification.severity}>
-          {notification.message}
-        </Alert>
+      <SearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+      <Box sx={{ mt: 3 }}><RecipeGrid recipes={paginatedRecipes} loading={loading} onView={handleViewRecipe} onEdit={handleEdit} onDelete={handleDelete} /></Box>
+      <PaginationControls totalItems={filteredRecipes.length} itemsPerPage={itemsPerPage} currentPage={currentPage} onPageChange={handlePageChange} onItemsPerPageChange={handleItemsPerPageChange} />
+      <DeleteConfirmationDialog open={deleteDialogOpen} title={recipeToDelete?.title || ''} onClose={() => setDeleteDialogOpen(false)} onConfirm={confirmDelete} />
+      <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleCloseNotification} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert onClose={handleCloseNotification} severity={notification.severity}>{notification.message}</Alert>
       </Snackbar>
     </Container>
   );
