@@ -138,12 +138,13 @@ For this deliverable, I did the following. I checked the box `[x]` and added a d
 
 For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Node.js/Express HTTP service** - I did not complete this part of the deliverable.
-- [ ] **Static middleware for frontend** - I did not complete this part of the deliverable.
-- [ ] **Calls to third-party endpoints** - I did not complete this part of the deliverable.
-- [ ] **Backend service endpoints** - I did not complete this part of the deliverable.
-- [ ] **Frontend calls service endpoints** - I did not complete this part of the deliverable.
-- [ ] **Supports registration, login, logout, and restricted endpoint** - I did not complete this part of the deliverable.
+- [x] **Node.js/Express HTTP service** - Created complete Express server in `service/index.js` running on port 4000 with proper middleware configuration and routing.
+- [x] **Static middleware for frontend** - Implemented `app.use(express.static('public'))` to serve built React application from the `service/public/` directory in production.
+- [x] **Calls to third-party endpoints** - Integrated `api.quotable.kurokeita.dev` to fetch random inspirational quotes displayed in a purple gradient box on the dashboard.
+- [x] **Backend service endpoints** - Created RESTful endpoints for authentication (`/api/auth/*`), user profile (`/api/profile`), recipes (`/api/recipes`), and ingredients (`/api/ingredients`).
+- [x] **Frontend calls service endpoints** - Updated 11 pages/components to replace localStorage with fetch calls using `credentials: 'include'` for cookie-based authentication.
+- [x] **Supports registration, login, logout, and restricted endpoint** - Implemented full authentication flow with registration, login (sets HTTP-only cookie), logout (clears cookie), and middleware protecting all recipe/profile endpoints.
+- [x] **Uses BCrypt to hash passwords** - All passwords hashed using BCrypt with salt rounds = 10 before storage; verification uses `bcrypt.compare()` to check credentials securely.
 
 
 ## 🚀 DB deliverable
