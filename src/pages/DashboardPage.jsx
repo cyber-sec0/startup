@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Box, Snackbar, Alert } from '@mui/material';
+import { Container, Typography, Box, Snackbar, Alert, Paper, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import RecipeGrid from '../components/dashboard/RecipeGrid';
 import DeleteConfirmationDialog from '../components/common/DeleteConfirmationDialog';
@@ -22,6 +22,8 @@ function DashboardPage() {
     message: '', 
     severity: 'success' 
   });
+  const [quote, setQuote] = useState({ text: '', author: '' });
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -31,16 +33,37 @@ function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // =========================================================================
-  // WEBSOCKET MOCK: Simulate real-time notifications
-  // =========================================================================
+  //Fetch random quote from quotable API
+  //Alternative: https://api.breakingbadquotes.xyz/v1/quotes
   useEffect(() => {
-    // Only subscribe to "socket" updates if authenticated
+    const fetchQuote = async () => {
+      setQuoteLoading(true);
+      try {
+        const response = await fetch('https://api.quotable.kurokeita.dev/api/quotes/random');
+        if (response.ok) {
+          const data = await response.json();
+          setQuote({ 
+            text: data.quote.content, 
+            author: data.quote.author.name 
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch quote:', error);
+      } finally {
+        setQuoteLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchQuote();
+    }
+  }, [isAuthenticated]);
+
+  //WebSocket simulation
+  useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Use setInterval to mock receiving WebSocket messages
     const socketInterval = setInterval(() => {
-      // 30% chance to receive a message every 8 seconds to make it feel "live" but not annoying
       if (Math.random() < 0.3) {
         const mockUsers = ['ChefMario', 'GordonR', 'JuliaC', 'HomeCook123'];
         const mockActions = [
@@ -63,23 +86,23 @@ function DashboardPage() {
 
     return () => clearInterval(socketInterval);
   }, [isAuthenticated]);
-  // =========================================================================
 
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
         setLoading(true);
-        // MOCK: Fetch from localStorage
-        await new Promise(resolve => setTimeout(resolve, 600)); 
-
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (!currentUser) return; // Should be handled by auth check above
         
-        const allRecipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-        // Filter for user
-        const userRecipes = allRecipes.filter(r => r.author === currentUser.email || !r.author);
+        const response = await fetch('/api/recipes', {
+          credentials: 'include'
+        });
 
-        const formattedRecipes = userRecipes.map(recipe => ({
+        if (!response.ok) {
+          throw new Error('Failed to fetch recipes');
+        }
+
+        const data = await response.json();
+        
+        const formattedRecipes = data.map(recipe => ({
           id: recipe.recipeId,
           title: recipe.title,
           notes: recipe.notes,
@@ -105,7 +128,7 @@ function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Filter recipes based on the search term
+  //Filter recipes based on the search term
   useEffect(() => {
     const filtered = recipes.filter(recipe =>
       recipe.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -113,14 +136,13 @@ function DashboardPage() {
     setFilteredRecipes(filtered);
   }, [searchTerm, recipes]);
 
-  // Update paginated recipes
+  //Update paginated recipes
   useEffect(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     setPaginatedRecipes(filteredRecipes.slice(startIndex, endIndex));
   }, [filteredRecipes, currentPage, itemsPerPage]);
 
-  // Handler functions
   const handleSearchChange = (value) => {
     setSearchTerm(value);
   };
@@ -152,12 +174,15 @@ function DashboardPage() {
     if (!recipeToDelete) return;
 
     try {
-      // MOCK: Delete from localStorage
-      const allRecipes = JSON.parse(localStorage.getItem('recipes') || '[]');
-      const updatedStore = allRecipes.filter(r => r.recipeId !== recipeToDelete.id);
-      localStorage.setItem('recipes', JSON.stringify(updatedStore));
+      const response = await fetch(`/api/recipes/${recipeToDelete.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
 
-      // Remove the deleted recipe from the state
+      if (!response.ok) {
+        throw new Error('Failed to delete recipe');
+      }
+
       const updatedRecipes = recipes.filter(recipe => recipe.id !== recipeToDelete.id);
       setRecipes(updatedRecipes);
 
@@ -187,6 +212,36 @@ function DashboardPage() {
       <Typography variant="h4" component="h1" gutterBottom>
         My Recipes
       </Typography>
+      
+      {/* Quote Section - appears right after title */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: 3, 
+          mb: 3, 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        }}
+      >
+        {quoteLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress sx={{ color: 'white' }} size={24} />
+          </Box>
+        ) : quote.text ? (
+          <>
+            <Typography variant="h6" sx={{ fontStyle: 'italic', mb: 1 }}>
+              "{quote.text}"
+            </Typography>
+            <Typography variant="body2" sx={{ textAlign: 'right', opacity: 0.9 }}>
+              — {quote.author}
+            </Typography>
+          </>
+        ) : (
+          <Typography variant="body2" sx={{ textAlign: 'center', opacity: 0.8 }}>
+            Loading inspirational quote...
+          </Typography>
+        )}
+      </Paper>
       
       <SearchBar 
         searchTerm={searchTerm}
