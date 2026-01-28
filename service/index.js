@@ -1,8 +1,8 @@
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const app = express();
+const db = require('./database');
 
 const port = process.argv.length > 2 ? process.argv[2] : 4000;
 
@@ -11,11 +11,6 @@ app.use(cookieParser());
 app.use(express.static('public'));
 app.set('trust proxy', true);
 
-//In-memory data stores
-let users = [];
-let recipes = [];
-let ingredients = [];
-
 //Helper functions
 function setAuthCookie(res, token) {
   res.cookie('token', token, {
@@ -23,28 +18,6 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: 'strict',
   });
-}
-
-async function createUser(email, password, userName) {
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = {
-    id: uuidv4(),
-    email: email,
-    userName: userName,
-    password: passwordHash,
-    token: uuidv4(),
-    createdAt: new Date().toISOString()
-  };
-  users.push(user);
-  return user;
-}
-
-async function findUser(email) {
-  return users.find((u) => u.email === email);
-}
-
-async function findUserByToken(token) {
-  return users.find((u) => u.token === token);
 }
 
 //Router for service endpoints
@@ -59,34 +32,43 @@ apiRouter.post('/auth/create', async (req, res) => {
     return res.status(400).send({ msg: 'Missing required information' });
   }
 
-  if (await findUser(email)) {
-    return res.status(409).send({ msg: 'Existing user' });
-  }
+  try {
+    if (await db.findUser(email)) {
+      return res.status(409).send({ msg: 'Existing user' });
+    }
 
-  const user = await createUser(email, password, userName);
-  setAuthCookie(res, user.token);
-  
-  res.send({
-    id: user.id,
-    email: user.email,
-    userName: user.userName
-  });
-});
-
-apiRouter.post('/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await findUser(email);
-  
-  if (user && await bcrypt.compare(password, user.password)) {
+    const user = await db.createUser(email, password, userName);
     setAuthCookie(res, user.token);
-    res.send({ 
+    
+    res.send({
       id: user.id,
       email: user.email,
       userName: user.userName
     });
-    return;
+  } catch (error) {
+    res.status(500).send({ msg: 'Error creating user' });
   }
-  res.status(401).send({ msg: 'Unauthorized' });
+});
+
+apiRouter.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  try {
+    const user = await db.findUser(email);
+    
+    if (user && await bcrypt.compare(password, user.password)) {
+      setAuthCookie(res, user.token);
+      res.send({ 
+        id: user.id,
+        email: user.email,
+        userName: user.userName
+      });
+      return;
+    }
+    res.status(401).send({ msg: 'Unauthorized' });
+  } catch (error) {
+    res.status(500).send({ msg: 'Login error' });
+  }
 });
 
 apiRouter.delete('/auth/logout', (_req, res) => {
@@ -95,17 +77,21 @@ apiRouter.delete('/auth/logout', (_req, res) => {
 });
 
 apiRouter.get('/user/:email', async (req, res) => {
-  const user = await findUser(req.params.email);
-  if (user) {
-    const token = req.cookies['token'];
-    res.send({ 
-      email: user.email,
-      userName: user.userName,
-      authenticated: token === user.token 
-    });
-    return;
+  try {
+    const user = await db.findUser(req.params.email);
+    if (user) {
+      const token = req.cookies['token'];
+      res.send({ 
+        email: user.email,
+        userName: user.userName,
+        authenticated: token === user.token 
+      });
+      return;
+    }
+    res.status(404).send({ msg: 'Unknown' });
+  } catch (error) {
+    res.status(500).send({ msg: 'Error fetching user' });
   }
-  res.status(404).send({ msg: 'Unknown' });
 });
 
 //Secure API Router (requires authentication)
@@ -114,189 +100,228 @@ apiRouter.use(secureApiRouter);
 
 secureApiRouter.use(async (req, res, next) => {
   const authToken = req.cookies['token'];
-  const user = await findUserByToken(authToken);
-  if (user) {
-    req.user = user; //Attach user to request
-    next();
-  } else {
-    res.status(401).send({ msg: 'Unauthorized' });
+  try {
+    const user = await db.findUserByToken(authToken);
+    if (user) {
+      req.user = user; //Attach user to request
+      next();
+    } else {
+      res.status(401).send({ msg: 'Unauthorized' });
+    }
+  } catch (error) {
+    res.status(500).send({ msg: 'Authentication error' });
   }
 });
 
 //User Profile Endpoints
 secureApiRouter.get('/profile', async (req, res) => {
-  const user = req.user;
-  const userRecipes = recipes.filter(r => r.author === user.email);
-  
-  res.send({
-    userName: user.userName,
-    email: user.email,
-    createdAt: user.createdAt,
-    recipeCount: userRecipes.length
-  });
+  try {
+    const user = req.user;
+    const userRecipes = await db.findRecipesByAuthor(user.email);
+    
+    res.send({
+      userName: user.userName,
+      email: user.email,
+      createdAt: user.createdAt,
+      recipeCount: userRecipes.length
+    });
+  } catch (error) {
+    res.status(500).send({ msg: 'Error fetching profile' });
+  }
 });
 
 secureApiRouter.put('/profile', async (req, res) => {
   const { userName, email } = req.body;
   const user = req.user;
   
-  //Check if new email already exists (only if email is being changed)
-  if (email && email !== user.email && await findUser(email)) {
-    return res.status(409).send({ msg: 'Email already in use' });
+  try {
+    //Check if new email already exists (only if email is being changed)
+    if (email && email !== user.email) {
+      const existingUser = await db.findUser(email);
+      if (existingUser) {
+        return res.status(409).send({ msg: 'Email already in use' });
+      }
+    }
+    
+    const updates = {};
+    if (userName) updates.userName = userName;
+    if (email) updates.email = email;
+    
+    await db.updateUser(user.email, updates);
+    
+    res.send({
+      userName: userName || user.userName,
+      email: email || user.email
+    });
+  } catch (error) {
+    res.status(500).send({ msg: 'Error updating profile' });
   }
-  
-  //Update username if provided
-  if (userName) {
-    user.userName = userName;
-  }
-  
-  //Update email if provided
-  if (email) {
-    user.email = email;
-  }
-  
-  res.send({
-    userName: user.userName,
-    email: user.email
-  });
 });
 
 secureApiRouter.put('/profile/password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const user = req.user;
   
-  if (!await bcrypt.compare(currentPassword, user.password)) {
-    return res.status(401).send({ msg: 'Incorrect current password' });
+  try {
+    if (!await bcrypt.compare(currentPassword, user.password)) {
+      return res.status(401).send({ msg: 'Incorrect current password' });
+    }
+    
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db.updateUser(user.email, { password: passwordHash });
+    
+    res.send({ msg: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).send({ msg: 'Error updating password' });
   }
-  
-  user.password = await bcrypt.hash(newPassword, 10);
-  res.send({ msg: 'Password updated successfully' });
 });
 
 //Recipe Endpoints
-secureApiRouter.get('/recipes', (req, res) => {
-  const userRecipes = recipes.filter(r => r.author === req.user.email);
-  res.send(userRecipes);
-});
-
-secureApiRouter.get('/recipes/:id', (req, res) => {
-  const recipe = recipes.find(r => r.recipeId === parseInt(req.params.id) && r.author === req.user.email);
-  if (recipe) {
-    res.send(recipe);
-  } else {
-    res.status(404).send({ msg: 'Recipe not found' });
+secureApiRouter.get('/recipes', async (req, res) => {
+  try {
+    const userRecipes = await db.findRecipesByAuthor(req.user.email);
+    res.send(userRecipes);
+  } catch (error) {
+    res.status(500).send({ msg: 'Error fetching recipes' });
   }
 });
 
-secureApiRouter.post('/recipes', (req, res) => {
+secureApiRouter.get('/recipes/:id', async (req, res) => {
+  try {
+    const recipe = await db.findRecipeById(req.params.id, req.user.email);
+    if (recipe) {
+      res.send(recipe);
+    } else {
+      res.status(404).send({ msg: 'Recipe not found' });
+    }
+  } catch (error) {
+    res.status(500).send({ msg: 'Error fetching recipe' });
+  }
+});
+
+secureApiRouter.post('/recipes', async (req, res) => {
   const { title, instructions, notes, ingredients } = req.body;
   
-  //Process ingredients (add new ones to ingredients store)
-  const recipeIngredients = [];
-  
-  ingredients.forEach(ing => {
-    let ingId = ing.ingredientId;
+  try {
+    //Process ingredients (add new ones to ingredients store)
+    const recipeIngredients = [];
+    const allIngredients = await db.getAllIngredients();
     
-    if (!ingId) {
-      const existing = ingredients.find(si => si.name.toLowerCase() === ing.name.toLowerCase());
-      if (existing) {
-        ingId = existing.ingredientId;
-      } else {
-        ingId = Date.now() + Math.floor(Math.random() * 1000);
-        ingredients.push({
-          ingredientId: ingId,
-          name: ing.name,
-          measurement: ing.unit
-        });
+    for (const ing of ingredients) {
+      let ingId = ing.ingredientId;
+      
+      if (!ingId) {
+        const existing = allIngredients.find(si => si.name.toLowerCase() === ing.name.toLowerCase());
+        if (existing) {
+          ingId = existing.ingredientId;
+        } else {
+          const newIng = await db.createIngredient({
+            name: ing.name,
+            measurement: ing.unit
+          });
+          ingId = newIng.ingredientId;
+        }
       }
+      
+      recipeIngredients.push({
+        ingredientId: ingId,
+        name: ing.name,
+        quantity: ing.quantity,
+        measurement: ing.unit
+      });
     }
     
-    recipeIngredients.push({
-      ingredientId: ingId,
-      name: ing.name,
-      quantity: ing.quantity,
-      measurement: ing.unit
+    const recipe = await db.createRecipe({
+      title,
+      instructions,
+      notes,
+      ingredients: recipeIngredients,
+      author: req.user.email
     });
-  });
-  
-  const recipe = {
-    recipeId: Date.now(),
-    title,
-    instructions,
-    notes,
-    ingredients: recipeIngredients,
-    author: req.user.email,
-    createdAt: new Date().toISOString()
-  };
-  
-  recipes.push(recipe);
-  res.send(recipe);
+    
+    res.send(recipe);
+  } catch (error) {
+    res.status(500).send({ msg: 'Error creating recipe' });
+  }
 });
 
-secureApiRouter.put('/recipes/:id', (req, res) => {
+secureApiRouter.put('/recipes/:id', async (req, res) => {
   const recipeId = parseInt(req.params.id);
-  const recipeIndex = recipes.findIndex(r => r.recipeId === recipeId && r.author === req.user.email);
-  
-  if (recipeIndex === -1) {
-    return res.status(404).send({ msg: 'Recipe not found' });
-  }
-  
   const { title, instructions, notes, ingredients: newIngredients } = req.body;
   
-  //Process ingredients
-  const recipeIngredients = [];
-  
-  newIngredients.forEach(ing => {
-    let ingId = ing.ingredientId || ing.id;
+  try {
+    const recipe = await db.findRecipeById(recipeId, req.user.email);
     
-    if (!ingId) {
-      const existing = ingredients.find(si => si.name.toLowerCase() === ing.name.toLowerCase());
-      if (existing) {
-        ingId = existing.ingredientId;
-      } else {
-        ingId = Date.now() + Math.floor(Math.random() * 1000);
-        ingredients.push({
-          ingredientId: ingId,
-          name: ing.name,
-          measurement: ing.unit
-        });
-      }
+    if (!recipe) {
+      return res.status(404).send({ msg: 'Recipe not found' });
     }
     
-    recipeIngredients.push({
-      ingredientId: ingId,
-      name: ing.name,
-      quantity: ing.quantity,
-      measurement: ing.unit
+    //Process ingredients
+    const recipeIngredients = [];
+    const allIngredients = await db.getAllIngredients();
+    
+    for (const ing of newIngredients) {
+      let ingId = ing.ingredientId || ing.id;
+      
+      if (!ingId) {
+        const existing = allIngredients.find(si => si.name.toLowerCase() === ing.name.toLowerCase());
+        if (existing) {
+          ingId = existing.ingredientId;
+        } else {
+          const newIng = await db.createIngredient({
+            name: ing.name,
+            measurement: ing.unit
+          });
+          ingId = newIng.ingredientId;
+        }
+      }
+      
+      recipeIngredients.push({
+        ingredientId: ingId,
+        name: ing.name,
+        quantity: ing.quantity,
+        measurement: ing.unit
+      });
+    }
+    
+    await db.updateRecipe(recipeId, req.user.email, {
+      title,
+      instructions,
+      notes,
+      ingredients: recipeIngredients
     });
-  });
-  
-  recipes[recipeIndex] = {
-    ...recipes[recipeIndex],
-    title,
-    instructions,
-    notes,
-    ingredients: recipeIngredients
-  };
-  
-  res.send(recipes[recipeIndex]);
+    
+    const updatedRecipe = await db.findRecipeById(recipeId, req.user.email);
+    res.send(updatedRecipe);
+  } catch (error) {
+    res.status(500).send({ msg: 'Error updating recipe' });
+  }
 });
 
-secureApiRouter.delete('/recipes/:id', (req, res) => {
+secureApiRouter.delete('/recipes/:id', async (req, res) => {
   const recipeId = parseInt(req.params.id);
-  const recipeIndex = recipes.findIndex(r => r.recipeId === recipeId && r.author === req.user.email);
   
-  if (recipeIndex === -1) {
-    return res.status(404).send({ msg: 'Recipe not found' });
+  try {
+    const deleted = await db.deleteRecipe(recipeId, req.user.email);
+    
+    if (!deleted) {
+      return res.status(404).send({ msg: 'Recipe not found' });
+    }
+    
+    res.status(204).end();
+  } catch (error) {
+    res.status(500).send({ msg: 'Error deleting recipe' });
   }
-  
-  recipes.splice(recipeIndex, 1);
-  res.status(204).end();
 });
 
 //Ingredients Endpoints
-secureApiRouter.get('/ingredients', (req, res) => {
-  res.send(ingredients);
+secureApiRouter.get('/ingredients', async (req, res) => {
+  try {
+    const ingredients = await db.getAllIngredients();
+    res.send(ingredients);
+  } catch (error) {
+    res.status(500).send({ msg: 'Error fetching ingredients' });
+  }
 });
 
 //Default error handler
@@ -309,6 +334,14 @@ app.use((_req, res) => {
   res.sendFile('index.html', { root: 'public' });
 });
 
-app.listen(port, () => {
-  console.log(`Listening on port ${port}`);
-});
+//Initialize database and start server
+db.connectDB()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Listening on port ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed to connect to database:', error);
+    process.exit(1);
+  });
