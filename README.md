@@ -149,10 +149,8 @@ For this deliverable, I did the following. I checked the box `[x]` and added a d
 
 ## 🚀 DB deliverable
 
-For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
-
-- [ ] **Stores data in MongoDB** - I did not complete this part of the deliverable.
-- [ ] **Stores credentials in MongoDB** - I did not complete this part of the deliverable.
+- [x] **Stores data in MongoDB** - Migrated from in-memory storage to MongoDB Atlas. All recipes, ingredients, and user data now persist in MongoDB collections with proper indexing for performance.
+- [x] **Stores credentials in MongoDB** - User credentials (email, hashed passwords, authentication tokens) are securely stored in MongoDB's `users` collection with bcrypt password hashing and unique email indexing.
 
 ## 🚀 WebSocket deliverable
 
