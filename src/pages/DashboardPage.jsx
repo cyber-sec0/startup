@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Typography, Box, Snackbar, Alert, Paper, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import RecipeGrid from '../components/dashboard/RecipeGrid';
@@ -6,6 +6,7 @@ import DeleteConfirmationDialog from '../components/common/DeleteConfirmationDia
 import SearchBar from '../components/dashboard/SearchBar';
 import PaginationControls from '../components/dashboard/PaginationControls';
 import { useAuth } from '../contexts/AuthContext';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 function DashboardPage() {
   const [recipes, setRecipes] = useState([]);
@@ -23,8 +24,34 @@ function DashboardPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   
-  const hasFetchedRecipes = useRef(false); //Prevent double fetch
-  const hasFetchedQuote = useRef(false); //Prevent double fetch
+  const hasFetchedRecipes = useRef(false);
+  const hasFetchedQuote = useRef(false);
+
+  // WebSocket message handler
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'recipeCreated') {
+      setNotification({
+        open: true,
+        message: `🔔 ${data.userName} just added a new "${data.recipeName}" recipe!`,
+        severity: 'info'
+      });
+    } else if (data.type === 'recipeUpdated') {
+      setNotification({
+        open: true,
+        message: `🔔 ${data.userName} just updated "${data.recipeName}"!`,
+        severity: 'info'
+      });
+    } else if (data.type === 'recipeDeleted') {
+      setNotification({
+        open: true,
+        message: `🔔 ${data.userName} deleted "${data.recipeName}"`,
+        severity: 'warning'
+      });
+    }
+  }, []);
+
+  // Initialize WebSocket connection
+  const { isConnected } = useWebSocket(handleWebSocketMessage);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -32,12 +59,11 @@ function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  //Fetch quote - only once
   useEffect(() => {
     if (!isAuthenticated || hasFetchedQuote.current) return;
     
     const fetchQuote = async () => {
-      hasFetchedQuote.current = true; //Mark as fetched before async call
+      hasFetchedQuote.current = true;
       setQuoteLoading(true);
       try {
         const response = await fetch('https://api.quotable.kurokeita.dev/api/quotes/random');
@@ -55,29 +81,11 @@ function DashboardPage() {
     fetchQuote();
   }, [isAuthenticated]);
 
-  //WebSocket simulation
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const socketInterval = setInterval(() => {
-      if (Math.random() < 0.3) {
-        const mockUsers = ['ChefMario', 'GordonR', 'JuliaC', 'HomeCook123'];
-        const mockActions = ['just added a new "Lasagna" recipe!', 'just added a new "brigadeiro" recipe!', 'just added a new "Chocolate Cake" recipe!', 'just added a new "Brazilian brigadeiro" recipe!'];
-        const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-        const randomAction = mockActions[Math.floor(Math.random() * mockActions.length)];
-        setNotification({ open: true, message: `🔔 ${randomUser} ${randomAction}`, severity: 'info' });
-      }
-    }, 8000);
-
-    return () => clearInterval(socketInterval);
-  }, [isAuthenticated]);
-
-  //Fetch recipes - only once
   useEffect(() => {
     if (!isAuthenticated || hasFetchedRecipes.current) return;
 
     const fetchRecipes = async () => {
-      hasFetchedRecipes.current = true; //Mark as fetched before async call
+      hasFetchedRecipes.current = true;
       try {
         setLoading(true);
         const response = await fetch('/api/recipes', { credentials: 'include' });
@@ -97,14 +105,12 @@ function DashboardPage() {
     fetchRecipes();
   }, [isAuthenticated]);
 
-  //Filter recipes
   useEffect(() => {
     const filtered = recipes.filter(recipe => recipe.title.toLowerCase().includes(searchTerm.toLowerCase()));
     setFilteredRecipes(filtered);
-    setCurrentPage(1); //Reset to first page when search changes
+    setCurrentPage(1);
   }, [searchTerm, recipes]);
 
-  //Paginate recipes
   useEffect(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -137,7 +143,27 @@ function DashboardPage() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>My Recipes</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 0 }}>
+          My Recipes
+        </Typography>
+        {isConnected && (
+          <Box sx={{ ml: 2, display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'success.main',
+              mr: 1,
+              animation: 'pulse 2s infinite'
+            }} />
+            <Typography variant="caption" color="text.secondary">
+              Live
+            </Typography>
+          </Box>
+        )}
+      </Box>
+      
       <Paper elevation={2} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
         {quoteLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress sx={{ color: 'white' }} size={24} /></Box>
@@ -157,6 +183,13 @@ function DashboardPage() {
       <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleCloseNotification} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={handleCloseNotification} severity={notification.severity}>{notification.message}</Alert>
       </Snackbar>
+      
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
     </Container>
   );
 }
