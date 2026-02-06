@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const express = require('express');
 const app = express();
 const db = require('./database');
+const { peerProxy, broadcastMessage } = require('./peerProxy');
 
 const port = process.argv.length > 2 ? process.argv[2] : 4000;
 
@@ -239,6 +240,14 @@ secureApiRouter.post('/recipes', async (req, res) => {
       author: req.user.email
     });
     
+    // Broadcast WebSocket notification
+    broadcastMessage({
+      type: 'recipeCreated',
+      userName: req.user.userName,
+      recipeName: title,
+      timestamp: new Date().toISOString()
+    });
+    
     res.send(recipe);
   } catch (error) {
     res.status(500).send({ msg: 'Error creating recipe' });
@@ -291,6 +300,14 @@ secureApiRouter.put('/recipes/:id', async (req, res) => {
       ingredients: recipeIngredients
     });
     
+    // Broadcast WebSocket notification
+    broadcastMessage({
+      type: 'recipeUpdated',
+      userName: req.user.userName,
+      recipeName: title,
+      timestamp: new Date().toISOString()
+    });
+    
     const updatedRecipe = await db.findRecipeById(recipeId, req.user.email);
     res.send(updatedRecipe);
   } catch (error) {
@@ -302,10 +319,22 @@ secureApiRouter.delete('/recipes/:id', async (req, res) => {
   const recipeId = parseInt(req.params.id);
   
   try {
+    const recipe = await db.findRecipeById(recipeId, req.user.email);
+    
+    if (!recipe) {
+      return res.status(404).send({ msg: 'Recipe not found' });
+    }
+    
     const deleted = await db.deleteRecipe(recipeId, req.user.email);
     
-    if (!deleted) {
-      return res.status(404).send({ msg: 'Recipe not found' });
+    if (deleted) {
+      // Broadcast WebSocket notification
+      broadcastMessage({
+        type: 'recipeDeleted',
+        userName: req.user.userName,
+        recipeName: recipe.title,
+        timestamp: new Date().toISOString()
+      });
     }
     
     res.status(204).end();
@@ -337,9 +366,13 @@ app.use((_req, res) => {
 //Initialize database and start server
 db.connectDB()
   .then(() => {
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       console.log(`Listening on port ${port}`);
     });
+    
+    // Initialize WebSocket
+    peerProxy(server);
+    console.log('WebSocket server initialized');
   })
   .catch((error) => {
     console.error('Failed to connect to database:', error);
