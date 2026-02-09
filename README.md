@@ -156,8 +156,8 @@ For this deliverable, I did the following. I checked the box `[x]` and added a d
 
 For this deliverable, I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Backend listens for WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Frontend makes WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Data sent over WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **WebSocket data displayed** - I did not complete this part of the deliverable.
-- [ ] **Application is fully functional** - I did not complete this part of the deliverable.
+- [x] **Backend listens for WebSocket connection** - Implemented `peerProxy.js` using the `ws` library to handle WebSocket upgrade requests and manage persistent connections with automatic ping/pong keepalive.
+- [x] **Frontend makes WebSocket connection** - Created `useWebSocket.jsx` React hook that establishes WebSocket connections on component mount with automatic reconnection on disconnect.
+- [x] **Data sent over WebSocket connection** - Backend broadcasts recipe events (create/update/delete) to all connected clients using `broadcastMessage()` function after database operations complete.
+- [x] **WebSocket data displayed** - Real-time notifications appear as Snackbar alerts on the dashboard when other users create, update, or delete recipes, showing username and recipe name.
+- [x] **Application is fully functional** - All features work end-to-end: authentication, CRUD operations, third-party quote API, MongoDB persistence, and real-time WebSocket notifications across multiple users.
