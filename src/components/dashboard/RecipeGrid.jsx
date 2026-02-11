@@ -1,34 +1,23 @@
-
+// src/components/dashboard/RecipeGrid.jsx
 
 /**
  * Displays a grid of recipe cards with optional loading state.
  * @memberof Dashboard
  * @function RecipeGrid
- * @param {Object} props - Component properties
+ * @param {Object} props
  * @param {Array} props.recipes - Array of recipe data objects
- * @param {boolean} props.loading - Whether recipes are currently loading
- * @param {Function} props.onEdit - Function called when edit button is clicked on a recipe
- * @param {Function} props.onDelete - Function called when delete button is clicked on a recipe
- * @returns {JSX.Element} Grid layout of recipe cards
- * @example
- * const recipes = [
- *   { id: 1, title: "Pancakes", description: "Breakfast favorite" },
- *   { id: 2, title: "Lasagna", description: "Italian classic" }
- * ];
- * 
- * <RecipeGrid 
- *   recipes={recipes}
- *   loading={false}
- *   onEdit={(id) => handleEdit(id)}
- *   onDelete={(id) => handleDelete(id)}
- * />
+ * @param {boolean} props.loading - Whether recipes are loading
+ * @param {Function} props.onEdit - Called when edit is clicked
+ * @param {Function} props.onDelete - Called when delete is clicked
+ * @param {Function} props.onShare - Called when share is clicked
+ * @returns {JSX.Element}
  */
 
 import React from 'react';
 import { Grid, CircularProgress, Box, Typography } from '@mui/material';
 import RecipeCard from './RecipeCard';
 
-function RecipeGrid({ recipes, loading, onEdit, onDelete }) {
+function RecipeGrid({ recipes, loading, onEdit, onDelete, onShare }) {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -36,7 +25,7 @@ function RecipeGrid({ recipes, loading, onEdit, onDelete }) {
       </Box>
     );
   }
-  
+
   if (recipes.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', mt: 4, p: 3 }}>
@@ -51,10 +40,11 @@ function RecipeGrid({ recipes, loading, onEdit, onDelete }) {
     <Grid container spacing={3}>
       {recipes.map((recipe) => (
         <Grid item key={recipe.id} xs={12} sm={6} md={4} lg={3}>
-          <RecipeCard 
-            recipe={recipe} 
-            onEdit={onEdit} 
-            onDelete={onDelete} 
+          <RecipeCard
+            recipe={recipe}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onShare={onShare}
           />
         </Grid>
       ))}

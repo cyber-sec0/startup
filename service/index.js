@@ -16,7 +16,7 @@ function setAuthCookie(res, token) {
   res.cookie('token', token, {
     secure: true,
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
   });
 }
 

@@ -4,12 +4,12 @@
  * Action bar for recipe pages with back, edit, delete, and share buttons.
  * @memberof Recipe
  * @function RecipeActionBar
- * @param {Object} props - Component properties
+ * @param {Object} props
  * @param {Function} props.onBack - Navigates back to the dashboard
  * @param {Function} props.onEdit - Opens the recipe editor
  * @param {Function} props.onDelete - Triggers the delete confirmation dialog
  * @param {Function} props.onShare - Copies the public share link to clipboard
- * @returns {JSX.Element} Action bar component
+ * @returns {JSX.Element}
  */
 
 import React from 'react';
@@ -22,11 +22,7 @@ import ShareIcon from '@mui/icons-material/Share';
 function RecipeActionBar({ onBack, onEdit, onDelete, onShare }) {
   return (
     <Box sx={{ display: 'flex', mb: 2 }}>
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={onBack}
-        sx={{ mr: 1 }}
-      >
+      <Button startIcon={<ArrowBackIcon />} onClick={onBack} sx={{ mr: 1 }}>
         Back
       </Button>
       <Box sx={{ flexGrow: 1 }} />
@@ -34,7 +30,7 @@ function RecipeActionBar({ onBack, onEdit, onDelete, onShare }) {
         <Button
           startIcon={<ShareIcon />}
           variant="outlined"
-          color="secondary"
+          color="error"
           onClick={onShare}
           sx={{ mr: 1 }}
         >
@@ -44,6 +40,7 @@ function RecipeActionBar({ onBack, onEdit, onDelete, onShare }) {
       <Button
         startIcon={<EditIcon />}
         variant="outlined"
+        color="error"
         onClick={onEdit}
         sx={{ mr: 1 }}
       >

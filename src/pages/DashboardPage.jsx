@@ -1,3 +1,4 @@
+// src/pages/DashboardPage.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Typography, Box, Snackbar, Alert, Paper, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -23,45 +24,28 @@ function DashboardPage() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   const hasFetchedRecipes = useRef(false);
   const hasFetchedQuote = useRef(false);
 
-  // WebSocket message handler
   const handleWebSocketMessage = useCallback((data) => {
     if (data.type === 'recipeCreated') {
-      setNotification({
-        open: true,
-        message: `🔔 ${data.userName} just added a new "${data.recipeName}" recipe!`,
-        severity: 'info'
-      });
+      setNotification({ open: true, message: `🔔 ${data.userName} just added "${data.recipeName}"!`, severity: 'info' });
     } else if (data.type === 'recipeUpdated') {
-      setNotification({
-        open: true,
-        message: `🔔 ${data.userName} just updated "${data.recipeName}"!`,
-        severity: 'info'
-      });
+      setNotification({ open: true, message: `🔔 ${data.userName} updated "${data.recipeName}"!`, severity: 'info' });
     } else if (data.type === 'recipeDeleted') {
-      setNotification({
-        open: true,
-        message: `🔔 ${data.userName} deleted "${data.recipeName}"`,
-        severity: 'warning'
-      });
+      setNotification({ open: true, message: `🔔 ${data.userName} deleted "${data.recipeName}"`, severity: 'warning' });
     }
   }, []);
 
-  // Initialize WebSocket connection
   const { isConnected } = useWebSocket(handleWebSocketMessage);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/signin', { replace: true });
-    }
+    if (!isLoading && !isAuthenticated) navigate('/signin', { replace: true });
   }, [isAuthenticated, isLoading, navigate]);
 
   useEffect(() => {
     if (!isAuthenticated || hasFetchedQuote.current) return;
-    
     const fetchQuote = async () => {
       hasFetchedQuote.current = true;
       setQuoteLoading(true);
@@ -77,13 +61,11 @@ function DashboardPage() {
         setQuoteLoading(false);
       }
     };
-
     fetchQuote();
   }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || hasFetchedRecipes.current) return;
-
     const fetchRecipes = async () => {
       hasFetchedRecipes.current = true;
       try {
@@ -91,55 +73,60 @@ function DashboardPage() {
         const response = await fetch('/api/recipes', { credentials: 'include' });
         if (!response.ok) throw new Error('Failed to fetch recipes');
         const data = await response.json();
-        const formattedRecipes = data.map(recipe => ({ id: recipe.recipeId, title: recipe.title, notes: recipe.notes, createdAt: recipe.createdAt }));
-        setRecipes(formattedRecipes);
-        setFilteredRecipes(formattedRecipes);
+        const formatted = data.map(recipe => ({
+          id: recipe.recipeId,
+          title: recipe.title,
+          notes: recipe.notes,
+          createdAt: recipe.createdAt
+        }));
+        setRecipes(formatted);
+        setFilteredRecipes(formatted);
       } catch (error) {
-        console.error('Error:', error);
         setNotification({ open: true, message: error.message || 'Failed to load recipes', severity: 'error' });
       } finally {
         setLoading(false);
       }
     };
-
     fetchRecipes();
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const filtered = recipes.filter(recipe => recipe.title.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filtered = recipes.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()));
     setFilteredRecipes(filtered);
     setCurrentPage(1);
   }, [searchTerm, recipes]);
 
   useEffect(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setPaginatedRecipes(filteredRecipes.slice(startIndex, endIndex));
+    const start = (currentPage - 1) * itemsPerPage;
+    setPaginatedRecipes(filteredRecipes.slice(start, start + itemsPerPage));
   }, [filteredRecipes, currentPage, itemsPerPage]);
 
-  const handleSearchChange = (value) => setSearchTerm(value);
-  const handlePageChange = (page) => setCurrentPage(page);
-  const handleItemsPerPageChange = (value) => { setItemsPerPage(value); setCurrentPage(1); };
-  const handleViewRecipe = (recipeId) => navigate(`/recipe/${recipeId}`);
-  const handleEdit = (recipeId) => navigate(`/edit-recipe/${recipeId}`);
-  const handleDelete = (id) => { const recipe = recipes.find(r => r.id === id); setRecipeToDelete(recipe); setDeleteDialogOpen(true); };
+  const handleShare = (id) => {
+    const shareUrl = `${window.location.origin}/view/${id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setNotification({ open: true, message: '🔗 Share link copied to clipboard!', severity: 'success' });
+    });
+  };
+
+  const handleDelete = (id) => {
+    const recipe = recipes.find(r => r.id === id);
+    setRecipeToDelete(recipe);
+    setDeleteDialogOpen(true);
+  };
 
   const confirmDelete = async () => {
     if (!recipeToDelete) return;
     try {
       const response = await fetch(`/api/recipes/${recipeToDelete.id}`, { method: 'DELETE', credentials: 'include' });
       if (!response.ok) throw new Error('Failed to delete recipe');
-      const updatedRecipes = recipes.filter(recipe => recipe.id !== recipeToDelete.id);
-      setRecipes(updatedRecipes);
-      setNotification({ open: true, message: `Recipe "${recipeToDelete.title}" deleted successfully`, severity: 'success' });
+      setRecipes(prev => prev.filter(r => r.id !== recipeToDelete.id));
+      setNotification({ open: true, message: `"${recipeToDelete.title}" deleted`, severity: 'success' });
     } catch (error) {
       setNotification({ open: true, message: error.message || 'Failed to delete recipe', severity: 'error' });
     }
     setDeleteDialogOpen(false);
     setRecipeToDelete(null);
   };
-
-  const handleCloseNotification = () => setNotification({ ...notification, open: false });
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -149,21 +136,16 @@ function DashboardPage() {
         </Typography>
         {isConnected && (
           <Box sx={{ ml: 2, display: 'flex', alignItems: 'center' }}>
-            <Box sx={{ 
-              width: 8, 
-              height: 8, 
-              borderRadius: '50%', 
-              bgcolor: 'success.main',
-              mr: 1,
+            <Box sx={{
+              width: 8, height: 8, borderRadius: '50%',
+              bgcolor: 'success.main', mr: 1,
               animation: 'pulse 2s infinite'
             }} />
-            <Typography variant="caption" color="text.secondary">
-              Live
-            </Typography>
+            <Typography variant="caption" color="text.secondary">Live</Typography>
           </Box>
         )}
       </Box>
-      
+
       <Paper elevation={2} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
         {quoteLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress sx={{ color: 'white' }} size={24} /></Box>
@@ -176,19 +158,47 @@ function DashboardPage() {
           <Typography variant="body2" sx={{ textAlign: 'center', opacity: 0.8 }}>Loading inspirational quote...</Typography>
         )}
       </Paper>
-      <SearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
-      <Box sx={{ mt: 3 }}><RecipeGrid recipes={paginatedRecipes} loading={loading} onView={handleViewRecipe} onEdit={handleEdit} onDelete={handleDelete} /></Box>
-      <PaginationControls totalItems={filteredRecipes.length} itemsPerPage={itemsPerPage} currentPage={currentPage} onPageChange={handlePageChange} onItemsPerPageChange={handleItemsPerPageChange} />
-      <DeleteConfirmationDialog open={deleteDialogOpen} title={recipeToDelete?.title || ''} onClose={() => setDeleteDialogOpen(false)} onConfirm={confirmDelete} />
-      <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleCloseNotification} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={handleCloseNotification} severity={notification.severity}>{notification.message}</Alert>
+
+      <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+
+      <Box sx={{ mt: 3 }}>
+        <RecipeGrid
+          recipes={paginatedRecipes}
+          loading={loading}
+          onEdit={(id) => navigate(`/edit-recipe/${id}`)}
+          onDelete={handleDelete}
+          onShare={handleShare}
+        />
+      </Box>
+
+      <PaginationControls
+        totalItems={filteredRecipes.length}
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
+      />
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        title={recipeToDelete?.title || ''}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+      />
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={() => setNotification(n => ({ ...n, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setNotification(n => ({ ...n, open: false }))} severity={notification.severity}>
+          {notification.message}
+        </Alert>
       </Snackbar>
-      
+
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
     </Container>
   );

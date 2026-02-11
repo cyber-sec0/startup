@@ -1,12 +1,11 @@
+// src/contexts/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
 export const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
 
@@ -19,13 +18,11 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
-  //Check authentication status
   const checkAuthStatus = async () => {
     setLoading(true);
     try {
-      //Check if we have a stored email to verify
-      const storedEmail = sessionStorage.getItem('userEmail');
-      
+      const storedEmail = localStorage.getItem('userEmail');
+
       if (!storedEmail) {
         setUser(null);
         setIsAuthenticated(false);
@@ -36,7 +33,7 @@ export const AuthProvider = ({ children }) => {
       const response = await fetch(`/api/user/${storedEmail}`, {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated) {
@@ -45,12 +42,12 @@ export const AuthProvider = ({ children }) => {
         } else {
           setUser(null);
           setIsAuthenticated(false);
-          sessionStorage.removeItem('userEmail');
+          localStorage.removeItem('userEmail');
         }
       } else {
         setUser(null);
         setIsAuthenticated(false);
-        sessionStorage.removeItem('userEmail');
+        localStorage.removeItem('userEmail');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -61,7 +58,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  //Login function
   const login = async (credentials) => {
     try {
       const response = await fetch('/api/auth/login', {
@@ -73,8 +69,11 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const userData = await response.json();
-        sessionStorage.setItem('userEmail', userData.email);
-        await checkAuthStatus();
+        // Set state directly from the response — no checkAuthStatus call
+        // to avoid a race with any stale localStorage value
+        localStorage.setItem('userEmail', userData.email);
+        setUser({ email: userData.email, userName: userData.userName, authenticated: true });
+        setIsAuthenticated(true);
         return true;
       }
       return false;
@@ -84,7 +83,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  //Register function
   const register = async (userData) => {
     try {
       const response = await fetch('/api/auth/create', {
@@ -96,11 +94,12 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        sessionStorage.setItem('userEmail', data.email);
-        await checkAuthStatus();
+        localStorage.setItem('userEmail', data.email);
+        setUser({ email: data.email, userName: data.userName, authenticated: true });
+        setIsAuthenticated(true);
         return true;
       }
-      
+
       const errorData = await response.json();
       throw new Error(errorData.msg || 'Registration failed');
     } catch (error) {
@@ -109,37 +108,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  //Logout
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', {
         method: 'DELETE',
         credentials: 'include'
       });
-      
-      sessionStorage.removeItem('userEmail');
-      setUser(null);
-      setIsAuthenticated(false);
-      return true;
     } catch (error) {
       console.error('Logout failed:', error);
+    } finally {
+      localStorage.removeItem('userEmail');
       setUser(null);
       setIsAuthenticated(false);
-      return false;
     }
+    return true;
   };
 
-  //Verify auth (alias for checkAuthStatus)
   const verifyAuth = async () => {
     await checkAuthStatus();
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      user, 
+    <AuthContext.Provider value={{
+      isAuthenticated,
+      user,
       loading,
-      login, 
+      login,
       logout,
       register,
       checkAuthStatus,
