@@ -1,7 +1,7 @@
-//src/pages/RecipePage.jsx
+// src/pages/RecipePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, CircularProgress, Alert } from '@mui/material';
+import { Container, CircularProgress, Alert, Snackbar } from '@mui/material';
 import RecipeActionBar from '../components/recipe/RecipeActionBar';
 import RecipeDetails from '../components/recipe/RecipeDetails';
 import DeleteConfirmationDialog from '../components/common/DeleteConfirmationDialog';
@@ -13,6 +13,7 @@ function RecipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     const fetchRecipeData = async () => {
@@ -24,22 +25,21 @@ function RecipePage() {
         if (!response.ok) {
           throw new Error('Recipe not found');
         }
-        
+
         const data = await response.json();
-        
+
         setRecipe({
           id: parseInt(id),
           title: data.title,
           ingredients: data.ingredients,
-          //Handle instructions possibly being an array or string
-          instructions: Array.isArray(data.instructions) 
-            ? data.instructions 
+          instructions: Array.isArray(data.instructions)
+            ? data.instructions
             : data.instructions.split('\n'),
           notes: data.notes
         });
-      } catch (error) {
-        console.error('Error fetching recipe:', error);
-        setError(error.message);
+      } catch (err) {
+        console.error('Error fetching recipe:', err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -48,12 +48,14 @@ function RecipePage() {
     fetchRecipeData();
   }, [id]);
 
-  const handleEdit = () => {
-    navigate(`/edit-recipe/${id}`);
-  };
+  const handleEdit = () => navigate(`/edit-recipe/${id}`);
+  const handleDelete = () => setDeleteDialogOpen(true);
 
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/view/${id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShareCopied(true);
+    });
   };
 
   const confirmDelete = async () => {
@@ -66,17 +68,13 @@ function RecipePage() {
       if (!response.ok) {
         throw new Error('Failed to delete recipe');
       }
-      
+
       navigate('/dash');
-    } catch (error) {
-      console.error('Delete error:', error);
+    } catch (err) {
+      console.error('Delete error:', err);
       setError('Failed to delete recipe');
     }
     setDeleteDialogOpen(false);
-  };
-
-  const goBack = () => {
-    navigate('/dash');
   };
 
   if (loading) {
@@ -97,19 +95,28 @@ function RecipePage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <RecipeActionBar 
-        onBack={goBack}
+      <RecipeActionBar
+        onBack={() => navigate('/dash')}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onShare={handleShare}
       />
-      
+
       {recipe && <RecipeDetails recipe={recipe} />}
-      
+
       <DeleteConfirmationDialog
         open={deleteDialogOpen}
         title={recipe?.title || ''}
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
+      />
+
+      <Snackbar
+        open={shareCopied}
+        autoHideDuration={3000}
+        onClose={() => setShareCopied(false)}
+        message="Share link copied to clipboard!"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Container>
   );
