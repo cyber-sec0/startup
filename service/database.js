@@ -112,6 +112,24 @@ async function findRecipeById(recipeId, author) {
   });
 }
 
+async function findPublicRecipeById(recipeId) {
+  const database = getDB();
+  const numericRecipeId = Number.parseInt(recipeId, 10);
+
+  if (Number.isNaN(numericRecipeId)) {
+    return await database.collection('recipes').findOne({
+      recipeId: recipeId
+    });
+  }
+
+  return await database.collection('recipes').findOne({
+    $or: [
+      { recipeId: numericRecipeId },
+      { recipeId: recipeId }
+    ]
+  });
+}
+
 async function updateRecipe(recipeId, author, updates) {
   const database = getDB();
   const result = await database.collection('recipes').updateOne(
@@ -171,6 +189,7 @@ module.exports = {
   createRecipe,
   findRecipesByAuthor,
   findRecipeById,
+  findPublicRecipeById,
   updateRecipe,
   deleteRecipe,
   //Ingredient operations

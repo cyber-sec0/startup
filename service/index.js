@@ -12,6 +12,25 @@ app.use(cookieParser());
 app.use(express.static('public'));
 app.set('trust proxy', true);
 
+
+const sendSharedRecipe = async (recipeId, res) => {
+  try {
+    const recipe = await db.findPublicRecipeById(recipeId);
+
+    if (recipe) {
+      res.send(recipe);
+    } else {
+      res.status(404).send({ msg: 'Recipe not found' });
+    }
+  } catch (error) {
+    res.status(500).send({ msg: 'Error fetching shared recipe' });
+  }
+};
+
+app.get('/shared-recipes/:id', async (req, res) => {
+  await sendSharedRecipe(req.params.id, res);
+});
+
 //Helper functions
 function setAuthCookie(res, token) {
   res.cookie('token', token, {
@@ -93,6 +112,10 @@ apiRouter.get('/user/:email', async (req, res) => {
   } catch (error) {
     res.status(500).send({ msg: 'Error fetching user' });
   }
+});
+
+apiRouter.get('/shared-recipes/:id', async (req, res) => {
+  await sendSharedRecipe(req.params.id, res);
 });
 
 //Secure API Router (requires authentication)

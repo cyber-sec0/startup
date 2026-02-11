@@ -16,6 +16,7 @@ import AddRecipePage from './pages/AddRecipePage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import WebSocketTestPage from './pages/WebSocketTestPage';
+import SharedRecipePage from './pages/SharedRecipePage';
 import OnboardingTour from './components/common/OnBoardingTour';
 import { ThemeProvider } from './contexts/ThemeProvider';
 
@@ -33,6 +34,7 @@ function App() {
                   <Route path="/signup" element={<SignUpPage />} />
                   <Route path="/" element={<LandingPage/>} />
                   <Route path="/ws-test" element={<WebSocketTestPage />} />
+                  <Route path="/shared-recipe/:id" element={<SharedRecipePage />} />
 
                   <Route element={<ProtectedRoute />}>
                     <Route path="/recipe/:id" element={<RecipePage />} />

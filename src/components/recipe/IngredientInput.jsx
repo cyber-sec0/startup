@@ -11,16 +11,15 @@ const IngredientInput = ({
   ingredient, 
   onChange, 
   onRemove, 
-  availableIngredients = [] 
+  availableIngredients = [],
+  readOnly = false
 }) => {
-  // Local state to track input values
   const [inputValues, setInputValues] = useState({
     name: ingredient.name || '',
     quantity: ingredient.quantity || '',
     unit: ingredient.unit || ''
   });
 
-  // Update parent component when values change
   useEffect(() => {
     onChange({
       ...ingredient,
@@ -30,8 +29,14 @@ const IngredientInput = ({
     });
   }, [inputValues]);
 
-  // Handle input changes
+  const unitOptions = [
+    'tsp', 'tbsp', 'cup', 'oz', 'fl oz', 'pt', 'qt', 'gal',
+    'ml', 'l', 'g', 'kg', 'lb',
+    'clove', 'slice', 'piece', 'pinch', 'dash', 'can', 'jar', 'package'
+  ];
+
   const handleChange = (field, value) => {
+    if (readOnly) return;
     setInputValues(prev => ({
       ...prev,
       [field]: value
@@ -49,17 +54,25 @@ const IngredientInput = ({
         sx={{ width: '20%', mr: 1 }}
         type="number"
         inputProps={{ min: 1, step: 1.00 }}
+        disabled={readOnly}
       />
       
-      {/* Unit input */}
+      {/* Unit selector */}
       <TextField
+        select
         size="small"
         label="Unit"
         value={inputValues.unit}
         onChange={(e) => handleChange('unit', e.target.value)}
         sx={{ width: '20%', mr: 1 }}
-        placeholder="cups, tbsp, g"
-      />
+        disabled={readOnly}
+        SelectProps={{ native: true }}
+      >
+        <option value="">Select</option>
+        {unitOptions.map((unit) => (
+          <option key={unit} value={unit}>{unit}</option>
+        ))}
+      </TextField>
       
       {/* Ingredient name with autocomplete */}
       <Autocomplete
@@ -69,23 +82,27 @@ const IngredientInput = ({
         value={inputValues.name}
         onChange={(_, newValue) => handleChange('name', newValue)}
         onInputChange={(_, newValue) => handleChange('name', newValue)}
+        disabled={readOnly}
         renderInput={(params) => (
           <TextField 
             {...params} 
             label="Ingredient" 
             placeholder="Start typing..."
+            disabled={readOnly}
           />
         )}
         sx={{ flexGrow: 1 }}
       />
       
-      <IconButton 
-        color="error" 
-        onClick={onRemove} 
-        sx={{ ml: 1 }}
-      >
-        <DeleteIcon />
-      </IconButton>
+      {!readOnly && (
+        <IconButton 
+          color="error" 
+          onClick={onRemove} 
+          sx={{ ml: 1 }}
+        >
+          <DeleteIcon />
+        </IconButton>
+      )}
     </Box>
   );
 };

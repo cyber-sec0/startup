@@ -5,7 +5,7 @@ import IngredientInput from './IngredientInput';
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
 
-function RecipeForm({ recipe, onSubmit, onCancel }) {
+function RecipeForm({ recipe, onSubmit, onCancel, readOnly = false, fetchIngredients = true }) {
   const [formData, setFormData] = useState({
     title: recipe?.title || '',
     description: recipe?.description || '',
@@ -18,7 +18,7 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
   const hasFetchedIngredients = useRef(false); //Prevent double fetch
   
   useEffect(() => {
-    if (hasFetchedIngredients.current) return; //Skip if already fetched
+    if (!fetchIngredients || hasFetchedIngredients.current) return; //Skip if already fetched
     
     const fetchAvailableIngredients = async () => {
       hasFetchedIngredients.current = true; //Mark as fetched before async call
@@ -33,7 +33,7 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
       }
     };
     fetchAvailableIngredients();
-  }, []); //Empty dependency array - only run once
+  }, [fetchIngredients]); //Empty dependency array - only run once
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,6 +88,7 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (readOnly) return;
     if (!validateForm()) return;
     const cleanedData = {
       ...formData,
@@ -102,15 +103,15 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <TextField fullWidth label="Recipe Title" name="title" value={formData.title} onChange={handleChange} error={Boolean(errors.title)} helperText={errors.title} variant="outlined" />
+            <TextField fullWidth label="Recipe Title" name="title" value={formData.title} onChange={handleChange} error={Boolean(errors.title)} helperText={errors.title} variant="outlined" disabled={readOnly} />
           </Grid>
           <Grid item xs={12}>
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" gutterBottom>Ingredients</Typography>
               {formData.ingredients.map((ingredient, index) => (
-                <IngredientInput key={ingredient.id || index} ingredient={ingredient} onChange={(updatedIngredient) => handleIngredientChange(index, updatedIngredient)} onRemove={() => { if (!ingredient.id) { const newIngredients = [...formData.ingredients]; newIngredients.splice(index, 1); setFormData({...formData, ingredients: newIngredients}); } else { handleRemoveIngredient(ingredient.id) } }} availableIngredients={availableIngredients} />
+                <IngredientInput key={ingredient.id || index} ingredient={ingredient} onChange={(updatedIngredient) => handleIngredientChange(index, updatedIngredient)} onRemove={() => { if (!ingredient.id) { const newIngredients = [...formData.ingredients]; newIngredients.splice(index, 1); setFormData({...formData, ingredients: newIngredients}); } else { handleRemoveIngredient(ingredient.id) } }} availableIngredients={availableIngredients} readOnly={readOnly} />
               ))}
-              <Button startIcon={<AddIcon />} onClick={handleAddIngredient} sx={{ mt: 1 }}>Add Ingredient</Button>
+              {!readOnly && <Button startIcon={<AddIcon />} onClick={handleAddIngredient} sx={{ mt: 1 }}>Add Ingredient</Button>}
               {errors.ingredients && (<Typography color="error" variant="caption" display="block" sx={{ mt: 1 }}>{errors.ingredients}</Typography>)}
             </Box>
           </Grid>
@@ -119,24 +120,26 @@ function RecipeForm({ recipe, onSubmit, onCancel }) {
               <Typography variant="h6" gutterBottom>Instructions</Typography>
               {formData.instructions.map((instruction, index) => (
                 <Box key={index} sx={{ display: 'flex', mb: 1 }}>
-                  <TextField fullWidth value={instruction} onChange={(e) => handleArrayChange(index, 'instructions', e.target.value)} placeholder={`Step ${index + 1}`} multiline rows={2} variant="outlined" />
-                  <IconButton color="error" onClick={() => handleRemoveItem('instructions', index)} disabled={formData.instructions.length <= 1} sx={{ ml: 1 }}><DeleteIcon /></IconButton>
+                  <TextField fullWidth value={instruction} onChange={(e) => handleArrayChange(index, 'instructions', e.target.value)} placeholder={`Step ${index + 1}`} multiline rows={2} variant="outlined" disabled={readOnly} />
+                  {!readOnly && <IconButton color="error" onClick={() => handleRemoveItem('instructions', index)} disabled={formData.instructions.length <= 1} sx={{ ml: 1 }}><DeleteIcon /></IconButton>}
                 </Box>
               ))}
-              <Button startIcon={<AddIcon />} onClick={() => handleAddItem('instructions')} sx={{ mt: 1 }}>Add Step</Button>
+              {!readOnly && <Button startIcon={<AddIcon />} onClick={() => handleAddItem('instructions')} sx={{ mt: 1 }}>Add Step</Button>}
               {errors.instructions && (<Typography color="error" variant="caption" display="block" sx={{ mt: 1 }}>{errors.instructions}</Typography>)}
             </Box>
           </Grid>
           <Grid item xs={12}>
-            <TextField fullWidth label="Notes" name="notes" value={formData.notes} onChange={handleChange} multiline rows={3} variant="outlined" />
+            <TextField fullWidth label="Notes" name="notes" value={formData.notes} onChange={handleChange} multiline rows={3} variant="outlined" disabled={readOnly} />
           </Grid>
-          <Grid item xs={12}>
-            <Divider sx={{ mb: 2 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button variant="outlined" onClick={onCancel}>Cancel</Button>
-              <Button variant="contained" type="submit" color="primary">Save Recipe</Button>
-            </Box>
-          </Grid>
+          {!readOnly && (
+            <Grid item xs={12}>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Button variant="outlined" onClick={onCancel}>Cancel</Button>
+                <Button variant="contained" type="submit" color="primary">Save Recipe</Button>
+              </Box>
+            </Grid>
+          )}
         </Grid>
       </form>
     </Paper>

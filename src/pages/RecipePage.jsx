@@ -1,7 +1,7 @@
 //src/pages/RecipePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, CircularProgress, Alert } from '@mui/material';
+import { Container, CircularProgress, Alert, Snackbar } from '@mui/material';
 import RecipeActionBar from '../components/recipe/RecipeActionBar';
 import RecipeDetails from '../components/recipe/RecipeDetails';
 import DeleteConfirmationDialog from '../components/common/DeleteConfirmationDialog';
@@ -13,6 +13,7 @@ function RecipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
 
   useEffect(() => {
     const fetchRecipeData = async () => {
@@ -24,16 +25,15 @@ function RecipePage() {
         if (!response.ok) {
           throw new Error('Recipe not found');
         }
-        
+
         const data = await response.json();
-        
+
         setRecipe({
           id: parseInt(id),
           title: data.title,
           ingredients: data.ingredients,
-          //Handle instructions possibly being an array or string
-          instructions: Array.isArray(data.instructions) 
-            ? data.instructions 
+          instructions: Array.isArray(data.instructions)
+            ? data.instructions
             : data.instructions.split('\n'),
           notes: data.notes
         });
@@ -56,6 +56,28 @@ function RecipePage() {
     setDeleteDialogOpen(true);
   };
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/shared-recipe/${id}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: recipe?.title || 'Shared recipe',
+          text: 'Open this recipe in shared view',
+          url: shareUrl
+        });
+        setShareMessage('Share sheet opened.');
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage('Share link copied to clipboard.');
+    } catch (shareError) {
+      console.error('Share error:', shareError);
+      setShareMessage(`Share link: ${shareUrl}`);
+    }
+  };
+
   const confirmDelete = async () => {
     try {
       const response = await fetch(`/api/recipes/${id}`, {
@@ -66,7 +88,7 @@ function RecipePage() {
       if (!response.ok) {
         throw new Error('Failed to delete recipe');
       }
-      
+
       navigate('/dash');
     } catch (error) {
       console.error('Delete error:', error);
@@ -97,19 +119,27 @@ function RecipePage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <RecipeActionBar 
+      <RecipeActionBar
         onBack={goBack}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onShare={handleShare}
       />
-      
+
       {recipe && <RecipeDetails recipe={recipe} />}
-      
+
       <DeleteConfirmationDialog
         open={deleteDialogOpen}
         title={recipe?.title || ''}
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
+      />
+
+      <Snackbar
+        open={Boolean(shareMessage)}
+        autoHideDuration={3000}
+        onClose={() => setShareMessage('')}
+        message={shareMessage}
       />
     </Container>
   );
